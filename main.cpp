@@ -26,41 +26,41 @@ atomic<int> t2 = 0;
 atomic<int> t3 = 0;
 atomic<int> t4 = 0;
 atomic<int> t5 = 0;
-int times = 10;
-int sleepTime = 30;
+int times = 500000;
+int sleepTime = 0;
 
 void thread1() {
     for(int i = 0; i < times; i++) {
         LOG_DEBUG("LOG_DEBUG: {}", t1++);
-        this_thread::sleep_for(chrono::milliseconds(sleepTime));
+        // this_thread::sleep_for(chrono::milliseconds(sleepTime));
     }
 }
 
 void thread2() {
     for(int i = 0; i < times; i++) {
         LOG_INFO("LOG_INFO: {}", t2++);
-        this_thread::sleep_for(chrono::milliseconds(sleepTime));
+        // this_thread::sleep_for(chrono::milliseconds(sleepTime));
     }
 }
 
 void thread3() {
     for(int i = 0; i < times; i++) {
         LOG_ERROR("LOG_ERROR: {}", t3++);
-        this_thread::sleep_for(chrono::milliseconds(sleepTime));
+        // this_thread::sleep_for(chrono::milliseconds(sleepTime));
     }
 }
 
 void thread4() {
     for(int i = 0; i < times; i++) {
         LOG_WARN("LOG_WARN: {}", t4++);
-        this_thread::sleep_for(chrono::milliseconds(sleepTime));
+        // this_thread::sleep_for(chrono::milliseconds(sleepTime));
     }
 }
 
 void thread5() {
     for(int i = 0; i < times; i++) {
         LOG_FATAL("LOG_FATAL: {}", t5++);
-        this_thread::sleep_for(chrono::milliseconds(sleepTime));
+        // this_thread::sleep_for(chrono::milliseconds(sleepTime));
     }
 }
 
@@ -96,9 +96,7 @@ public:
 #include <fstream>
 
 int main() {
-
-    Logfile& logfile = Singleton<Logfile>::instance(filesystem::current_path() / "log.txt", 3);
-    logfile.start();
+    startLog();
 
     thread t1(thread1);
     thread t2(thread2);

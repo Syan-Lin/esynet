@@ -60,12 +60,10 @@ public:
         ss << seconds << "." << microseconds;
         return ss.str();
     }
-    std::string toFormattedString(bool showMicroseconds = true) const {
+    // reference: https://en.cppreference.com/w/cpp/io/manip/put_time
+    std::string toFormattedString(bool showMicroseconds = true,
+                                const char* format = "%Y-%m-%d %H:%M:%S") const {
         using namespace std;
-
-        // Output format
-        // reference: https://en.cppreference.com/w/cpp/io/manip/put_time
-        const char format[] = "%Y-%m-%d %H:%M:%S";
 
         time_t time_seconds = microSecondsSinceEpoch_ / kMicroSecondsPerSecond;
         stringstream ss;

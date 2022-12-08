@@ -24,13 +24,6 @@ public:
         });
         return *instance_;
     }
-    template<typename... Args>
-    static T& instance(Args&&... args) {
-        std::call_once(init_flag_, [&](){
-            instance_ = std::make_unique<T>(std::forward<Args&&>(args)...);
-        });
-        return *instance_;
-    }
     static void destroy() {
         std::call_once(dest_flag_, [&](){
             instance_.reset();
