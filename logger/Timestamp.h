@@ -49,10 +49,6 @@ public:
         return *this;
     }
 
-    void swap(Timestamp& that) {
-        std::swap(microSecondsSinceEpoch_, that.microSecondsSinceEpoch_);
-    }
-
     static const int kMicroSecondsPerSecond = 1000 * 1000;
     std::string toString() const {
         std::stringstream ss;

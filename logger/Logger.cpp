@@ -43,11 +43,35 @@ Logger::Logger(const char* file, int line, const char* func, LogLevel level)
 
 #include "dbg.h"
 
-const std::string Logger::getThreadId() {
+std::string Logger::getThreadId() {
     dbg("getThreadId");
     std::stringstream ss;
     ss << std::this_thread::get_id();
     std::string thread_id = ss.str();
     thread_id = thread_id.substr(thread_id.length() - 4, 4);
     return thread_id;
+}
+
+const std::string& Logger::getDate(Timestamp& time) {
+    static time_t lastDay = 0;
+    static std::string dateStr = "";
+    time_t seconds = time.secondsSinceEpoch();
+    time_t day = seconds / 86400;
+    if(day != lastDay) {
+        lastDay = day;
+        dateStr = fmt::format("{:%Y-%m-%d}", fmt::localtime(seconds));
+    }
+    return dateStr;
+}
+
+std::string Logger::getTime(Timestamp& time) {
+    static time_t lastSecond = 0;
+    static std::string secondStr = "";
+    time_t seconds = time.secondsSinceEpoch();
+    if(seconds != lastSecond) {
+        lastSecond = seconds;
+        secondStr = fmt::format("{:%H:%M:%S}", fmt::localtime(seconds));
+    }
+    int64_t microseconds = time.microSecondsSinceEpoch() % Timestamp::kMicroSecondsPerSecond;
+    return secondStr + fmt::format(".{:06d}", microseconds);
 }

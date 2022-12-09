@@ -2,16 +2,13 @@
 #include "AsyncLogger.h"
 
 // TODO: 配置文件化
-const std::string AsyncLogger::gHeader = "Date                       Tid  Level File            Function             Line  Msg\n";
+const std::string AsyncLogger::gHeader = "Date       Time            Tid  Level File            Function             Line  Msg\n";
 const int AsyncLogger::gMaxFileSize = 100 MB;
 // inline const std::string Logfile::gHeader = fmt::format("{:26} {:4} {:5} {:15} {:20} {:5} {}\n",
 //                                                     "Date", "Tid", "Level", "File", "Function", "Line", "Msg");
 
-TimeAnalyser ta;
-TimeStatistics ts;
-
 AsyncLogger::AsyncLogger(std::filesystem::path path, int flushInterval) :
-        file_(new FileWriter(path)), flushInterval_(flushInterval)  {
+        file_(new FileWriter(std::filesystem::current_path()/path)), flushInterval_(flushInterval)  {
     buffer_ = std::make_unique<Buffer>();
     backupBuffer_ = std::make_unique<Buffer>();
     running_ = false;
@@ -31,7 +28,7 @@ AsyncLogger::~AsyncLogger() {
 
     /* 性能测试 */
     // ta.stop("AsyncLogger");
-    dbg(ts.toString(TimeAnalyser::SECONDS));
+    // dbg(ts.toString(TimeAnalyser::SECONDS));
 }
 
 void AsyncLogger::start() {

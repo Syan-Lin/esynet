@@ -48,7 +48,7 @@ public:
     }
     void stop(const char* name) {
         using namespace std::chrono;
-        if(timeMap_.find(name) == timeMap_.end()) return;
+        if(timePointMap_.find(name) == timePointMap_.end()) return;
         timeMap_[name] = duration_cast<nanoseconds>(now() - timePointMap_[name]).count();
         addToStat_(name, timeMap_[name]);
     }

@@ -9,6 +9,7 @@
 
 /* Third-party headers */
 #include <fmt/format.h>
+#include <fmt/chrono.h>
 #include <unordered_map>
 
 /* Local headers */
@@ -52,20 +53,24 @@ public:
         if(level_ < gLogLevel) return;
 
         // Singleton<TimeAnalyser>::instance().start("get_thread_id");
-
-        thread_local static std::string thread_id = getThreadId();  /* TODO: 待测试 */
-
+        thread_local static std::string thread_id = getThreadId();  /* TODO: 多线程环境待测试 */
         // Singleton<TimeAnalyser>::instance().stop("get_thread_id");
+
+        // Singleton<TimeAnalyser>::instance().start("get_date");
+        const std::string& date = getDate(time_);
+        // Singleton<TimeAnalyser>::instance().stop("get_date");
+
+        // Singleton<TimeAnalyser>::instance().start("get_time");
+        std::string time = getTime(time_);
+        // Singleton<TimeAnalyser>::instance().stop("get_time");
 
         // Singleton<TimeAnalyser>::instance().start("format_info");
         /* TODO: 优化性能 */
         /* [time: 26] | [tid: 4] | [mode: 5] | [filename: 15] | [func: 20] | [line: 5] */
         const std::string log_info = "Date                       Tid  Level File            Function             Line  Msg\n";
-        // std::string log_info = format("{:26} {:4} {:5} {:15} {:20} {:<5} {}\n",
-        //                                 time_.toFormattedString(),
-        //                                 thread_id, levelToString(level_), file_, func_, line_,
+        // std::string log_info = format("{:10} {:15} {:4} {:5} {:15} {:20} {:<5} {}\n",
+        //                                 date, time, thread_id, levelToString(level_), file_, func_, line_,
         //                                 vformat(fmt, make_format_args(std::forward<ARGS>(args)...)));
-
         // Singleton<TimeAnalyser>::instance().stop("format_info");
 
         // Singleton<TimeAnalyser>::instance().start("hand_to_backend");
@@ -75,7 +80,9 @@ public:
     }
 
 private:
-    const std::string getThreadId();
+    std::string getThreadId();
+    const std::string& getDate(Timestamp&);
+    std::string getTime(Timestamp&);
 
 private:
     Timestamp time_;

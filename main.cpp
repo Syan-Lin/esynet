@@ -106,14 +106,13 @@ int main() {
         )
     );
 
-    AsyncLogger al(filesystem::current_path()/"log.log");
+    AsyncLogger al("log.log");
     Logger::setLogger(std::bind(&AsyncLogger::append, &al, std::placeholders::_1));
     al.start();
 
     Singleton<TimeAnalyser>::instance().start("main");
 
     for(int i = 0; i < times; i++) {
-        // Singleton<TimeAnalyser>::instance().start("init_obj");
         LOG_INFO("LOG_INFO: {}", t1++);
     }
 
