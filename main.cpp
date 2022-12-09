@@ -1,10 +1,10 @@
 #include "Timestamp.h"
 #include "Singleton.h"
-#include "dbg.h"
+#include <dbg.h>
 #include "Logger.h"
 #include "Buffer.h"
 #include "FileUtil.h"
-#include "Logfile.h"
+#include "AsyncLogger.h"
 #include <fmt/format.h>
 #include <fmt/color.h>
 
@@ -26,7 +26,7 @@ atomic<int> t2 = 0;
 atomic<int> t3 = 0;
 atomic<int> t4 = 0;
 atomic<int> t5 = 0;
-int times = 500000;
+int times = 1000000;
 int sleepTime = 0;
 
 void thread1() {
@@ -94,20 +94,48 @@ public:
 
 #include <filesystem>
 #include <fstream>
+#include "PerformanceAnalyser.h"
 
+/* Logger 最高写入速度可达 193 MB/s */
 int main() {
-    startLog();
+    TimeStatistics ts;
+    Singleton<TimeAnalyser>::instance().addStat(
+        std::bind(
+            &TimeStatistics::stat, &ts,
+            std::placeholders::_1, std::placeholders::_2
+        )
+    );
 
-    thread t1(thread1);
-    thread t2(thread2);
-    thread t3(thread3);
-    thread t4(thread4);
-    thread t5(thread5);
-    t1.join();
-    t2.join();
-    t3.join();
-    t4.join();
-    t5.join();
+    AsyncLogger al(filesystem::current_path()/"log.log");
+    Logger::setLogger(std::bind(&AsyncLogger::append, &al, std::placeholders::_1));
+    al.start();
+
+    Singleton<TimeAnalyser>::instance().start("main");
+
+    for(int i = 0; i < times; i++) {
+        // Singleton<TimeAnalyser>::instance().start("init_obj");
+        LOG_INFO("LOG_INFO: {}", t1++);
+    }
+
+    // mutex mutex_;
+    // for(int i = 0; i < 1000; i++) {
+    //     unique_lock<mutex> lock(mutex_);
+    // }
+
+    // thread t1(thread1);
+    // thread t2(thread2);
+    // thread t3(thread3);
+    // thread t4(thread4);
+    // thread t5(thread5);
+    // t1.join();
+    // t2.join();
+    // t3.join();
+    // t4.join();
+    // t5.join();
+
+    Singleton<TimeAnalyser>::instance().stop("main");
+
+    dbg(ts.toString(TimeAnalyser::SECONDS));
 
     return 0;
 }
