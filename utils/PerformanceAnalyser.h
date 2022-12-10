@@ -15,6 +15,7 @@ public:
     using TimeMap = std::map<const char*, int64_t>;
     using TimeStatistics = std::function<void(const char*, int64_t)>;
     enum Unit { NANOSECONDS, MICROSECONDS, MILLISECONDS, SECONDS };
+
     static double toMicroseconds(int64_t nanoSeconds) {
         return static_cast<double>(nanoSeconds / 1000.0);
     }
@@ -58,7 +59,6 @@ public:
         }
         return -1;
     }
-
     template<typename Function>
     int64_t func(Function function) {
         using namespace std::chrono;
@@ -75,19 +75,11 @@ public:
         return result;
     }
 
-    TimeMap& getMap() {
-        return timeMap_;
-    }
-
-    void addStat(TimeStatistics stat) {
-        addToStat_ = stat;
-    }
+    TimeMap& getMap() { return timeMap_; }
+    void addStat(TimeStatistics stat) { addToStat_ = stat; }
 
 private:
-    TimePoint now() {
-        using namespace std::chrono;
-        return high_resolution_clock::now();
-    }
+    TimePoint now() { return std::chrono::high_resolution_clock::now(); }
     void doNothing(const char*, int64_t) {}
 
 private:
@@ -107,11 +99,7 @@ public:
         }
         tm_[name] += time;
     }
-
-    TimeMap& getMap() {
-        return tm_;
-    }
-
+    TimeMap& getMap() { return tm_; }
     std::string toString(TimeAnalyser::Unit unit = TimeAnalyser::MILLISECONDS) {
         std::string result;
         for(auto& [name, time] : tm_) {

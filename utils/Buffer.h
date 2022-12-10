@@ -4,7 +4,20 @@
 #include <cstring>
 #include <string>
 
-/* FixedBuffer should have a better performance if used properly. */
+constexpr int operator""_B(unsigned long long num) {
+    return num;
+}
+constexpr int operator""_KB(unsigned long long num) {
+    return num * 1024;
+}
+constexpr int operator""_MB(unsigned long long num) {
+    return num * 1024 * 1024;
+}
+constexpr int operator""_GB(unsigned long long num) {
+    return num * 1024 * 1024 * 1024;
+}
+
+/* FixedBuffer 性能更好 */
 template<int SIZE>
 class FixedBuffer {
 public:
@@ -15,7 +28,7 @@ public:
     FixedBuffer& operator=(FixedBuffer&&)       = default;
     ~FixedBuffer()                              = default;
 
-    /* Should check remaining space before calling append */
+    /* 在 append 之前请保证缓冲区足够大 */
     void append(const char* buf, size_t len) {
         if (remain() > len) {
             memcpy(cur_, buf, len);

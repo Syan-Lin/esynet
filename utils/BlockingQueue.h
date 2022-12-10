@@ -4,10 +4,8 @@
 #include <queue>
 #include <condition_variable>
 
-/* thread safe queue, operation dequeue will block if queue is empty
- * so you might check empty before dequeue, if you don't want to block
- *
- * notice: use smart pointer as T may have a better performance */
+/* 线程安全队列，如果队列为空，dequeue 操作会阻塞
+ * Notice: 存储智能指针可以避免不必要的拷贝 */
 template <typename T>
 class BlockingQueue {
 public:

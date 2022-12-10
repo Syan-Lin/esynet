@@ -12,7 +12,7 @@ project(esynet)
 # 1. fmt
 find_package(fmt REQUIRED QUIET)
 
-# 2. doctest 单元测试用
+# 2. doctest 用于单元测试
 if(BUILD_TEST)
     enable_testing()
     find_package(doctest REQUIRED QUIET)

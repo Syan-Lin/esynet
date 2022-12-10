@@ -1,10 +1,20 @@
 #include "Logger.h"
 
-static void doNothing(const std::string&) {}
+static void logToConsole(const std::string& msg) {
+    static bool first = true;
+    if(first) {
+        std::cout << Logger::gHeader;
+        first = false;
+    }
+    std::cout << msg;
+}
 
-/* TODO: 配置文件化 */
 Logger::LogLevel Logger::gLogLevel = Logger::LogLevel::INFO;
-Logger::BackEndFunction Logger::gLogToFile = std::bind(doNothing, std::placeholders::_1);
+fmt::string_view Logger::gFormat = "{:10} {:15} {:4} {:5} {:15} {:20} {:<5} {}\n";
+const std::string Logger::gHeader = "Date       Time            Tid  Level File            Function             Line  Msg\n";
+const int Logger::gMaxFileSize = 100_MB;
+
+Logger::BackEndFunction Logger::gSubmitLog = std::bind(logToConsole, std::placeholders::_1);
 const Logger::StrMap Logger::gLogName = {
     {Logger::NONE, "None"},
     {Logger::DEBUG, "Debug"},
@@ -15,7 +25,7 @@ const Logger::StrMap Logger::gLogName = {
 };
 
 void Logger::setLogger(BackEndFunction func) {
-    gLogToFile = func;
+    gSubmitLog = func;
 }
 
 void Logger::setLogLevel(LogLevel level) {
@@ -34,17 +44,26 @@ const std::string& Logger::levelToString(LogLevel level) {
     return Logger::gLogName.at(NONE);
 }
 
+void Logger::loadConfig() {
+    static bool loaded = false;
+    if(loaded) return;
+    /* TODO:
+     * 1. 配置日志消息 format
+     * 2. 配置日志级别
+     * 3. 配置文件头
+     * 4. 配置最大文件大小
+     */
+    loaded = true;
+}
+
 Logger::Logger(const char* file, int line, const char* func, LogLevel level)
         : line_(line), func_(func), level_(level) {
     file_ = strrchr(file, '/') + 1;
     time_ = Timestamp::now();
-    // Singleton<TimeAnalyser>::instance().stop("init_obj");
+    loadConfig();
 }
 
-#include "dbg.h"
-
 std::string Logger::getThreadId() {
-    dbg("getThreadId");
     std::stringstream ss;
     ss << std::this_thread::get_id();
     std::string thread_id = ss.str();
@@ -67,11 +86,12 @@ const std::string& Logger::getDate(Timestamp& time) {
 std::string Logger::getTime(Timestamp& time) {
     static time_t lastSecond = 0;
     static std::string secondStr = "";
-    time_t seconds = time.secondsSinceEpoch();
+    int64_t microseconds = time.microSecondsSinceEpoch();
+    time_t seconds = microseconds / Timestamp::kMicroSecondsPerSecond;
     if(seconds != lastSecond) {
         lastSecond = seconds;
         secondStr = fmt::format("{:%H:%M:%S}", fmt::localtime(seconds));
     }
-    int64_t microseconds = time.microSecondsSinceEpoch() % Timestamp::kMicroSecondsPerSecond;
+    microseconds %= Timestamp::kMicroSecondsPerSecond;
     return secondStr + fmt::format(".{:06d}", microseconds);
 }

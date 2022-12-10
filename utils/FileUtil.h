@@ -1,15 +1,14 @@
 #pragma once
 
+/* System headers */
 #include <filesystem>
 #include <fstream>
 #include <cstring>
 
-#define B *1
-#define KB *1024 B
-#define MB *1024 KB
-#define GB *1024 MB
+/* Local headers */
+#include "Buffer.h"
 
-/* will create file if not exists */
+/* 如果文件或目录不存在，则会创建 */
 class FileWriter {
 public:
     FileWriter(std::filesystem::path path, std::string filename)
@@ -30,7 +29,6 @@ public:
         std::filesystem::rename(path_, path_.parent_path().string() + "/" + filename);
     }
 
-    /* if file doesn't exist, create it */
     void open() {
         if(fileOutput_.is_open()) return;
 
@@ -73,13 +71,13 @@ public:
         return std::filesystem::file_size(path_);
     }
 
-    /* if file doesn't exist, nothing happens */
+    /* 如果文件不存在，则无行为 */
     void open() {
         if(fileInput_.is_open() || !exists()) return;
         fileInput_.open(path_.c_str(), std::ios::in);
     }
 
-    /* read data into buffer, make sure buffer is large enough */
+    /* 使用该接口请保证 buf 足够大 */
     void read(char* buf, size_t len) {
         if(!exists()) return;
         if(!fileInput_.is_open()) open();
@@ -116,7 +114,7 @@ public:
     }
 
 private:
-    static const int BUFFER_SIZE = 1 MB;
+    static const int BUFFER_SIZE = 1_MB;
     int current_ = 0;
     char buffer_[BUFFER_SIZE + 1];
     std::ifstream fileInput_;

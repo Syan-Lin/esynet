@@ -6,16 +6,15 @@
 #include <iostream>
 #include <thread>
 #include <functional>
+#include <unordered_map>
 
 /* Third-party headers */
 #include <fmt/format.h>
 #include <fmt/chrono.h>
-#include <unordered_map>
 
 /* Local headers */
 #include "Timestamp.h"
-#include "PerformanceAnalyser.h"
-#include "Singleton.h"
+#include "FileUtil.h"
 
 /* 用户所使用的 Logger 前端，具体 Log 任务通过 BackEndFunction 传递给后端
  * 通过宏使用，每次都会创建新对象，所以不用保证线程安全 */
@@ -24,65 +23,52 @@ public:
     enum LogLevel { NONE, DEBUG, INFO, WARN, ERROR, FATAL, };
     using BackEndFunction = std::function<void(const std::string& msg)>;
     using StrMap = std::unordered_map<LogLevel, std::string>;
-    /* 设置 Logger 后端 */
     static void setLogger(BackEndFunction);
-    /* 默认级别: INFO */
     static void setLogLevel(LogLevel);
+    static const std::string gHeader;
+    static const int gMaxFileSize;
 
 private:
     static LogLevel gLogLevel;
-    static BackEndFunction gLogToFile;
+    static BackEndFunction gSubmitLog;
     static const StrMap gLogName;
+    static fmt::string_view gFormat;
     const std::string& levelToString(LogLevel level);
-    thread_local static char* thread_id_;
-
-    // struct ComplieTimeString {
-    //     template<int N>
-    //     ComplieTimeString(const char (&arr)[N]) : data_(arr), size_(N-1) {}
-    //     const char* data_;
-    //     int size_;
-    // };
 
 public:
     Logger(const char*, int, const char*, LogLevel);
 
     /* 模板函数，必须放在头文件中 */
     template<typename... ARGS>
-    void log(fmt::string_view fmt, ARGS&&... args) {
+    void log(const char* fmt, ARGS&&... args) {
         using namespace fmt;
         if(level_ < gLogLevel) return;
 
-        // Singleton<TimeAnalyser>::instance().start("get_thread_id");
-        thread_local static std::string thread_id = getThreadId();  /* TODO: 多线程环境待测试 */
-        // Singleton<TimeAnalyser>::instance().stop("get_thread_id");
+        /* 性能优化相关 */
+        thread_local static std::string thread_id = getThreadId();  /* 每个线程只会执行一次 */
+        const std::string& date = getDate(time_);                   /* 缓存日期，避免重复 format */
+        std::string time = getTime(time_);                          /* 缓存时间，避免重复 format */
 
-        // Singleton<TimeAnalyser>::instance().start("get_date");
-        const std::string& date = getDate(time_);
-        // Singleton<TimeAnalyser>::instance().stop("get_date");
-
-        // Singleton<TimeAnalyser>::instance().start("get_time");
-        std::string time = getTime(time_);
-        // Singleton<TimeAnalyser>::instance().stop("get_time");
-
-        // Singleton<TimeAnalyser>::instance().start("format_info");
-        /* TODO: 优化性能 */
-        /* [time: 26] | [tid: 4] | [mode: 5] | [filename: 15] | [func: 20] | [line: 5] */
-        const std::string log_info = "Date                       Tid  Level File            Function             Line  Msg\n";
-        // std::string log_info = format("{:10} {:15} {:4} {:5} {:15} {:20} {:<5} {}\n",
-        //                                 date, time, thread_id, levelToString(level_), file_, func_, line_,
-        //                                 vformat(fmt, make_format_args(std::forward<ARGS>(args)...)));
-        // Singleton<TimeAnalyser>::instance().stop("format_info");
-
-        // Singleton<TimeAnalyser>::instance().start("hand_to_backend");
+        /* 字段顺序: 日期, 时间, 线程ID, 日志级别, 文件名, 函数名, 行号, 日志信息 */
+        const std::string log_info = vformat(gFormat, make_format_args(
+                                        date,
+                                        time,
+                                        thread_id,
+                                        levelToString(level_),
+                                        file_,
+                                        func_,
+                                        line_,
+                                        vformat(fmt, make_format_args(std::forward<ARGS>(args)...))
+                                    ));
         /* 交由后端写入文件 */
-        gLogToFile(log_info);
-        // Singleton<TimeAnalyser>::instance().stop("hand_to_backend");
+        gSubmitLog(log_info);
     }
 
 private:
     std::string getThreadId();
     const std::string& getDate(Timestamp&);
     std::string getTime(Timestamp&);
+    void loadConfig();
 
 private:
     Timestamp time_;

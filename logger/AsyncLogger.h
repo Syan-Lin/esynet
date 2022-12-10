@@ -4,26 +4,20 @@
 #include <filesystem>
 #include <mutex>
 #include <condition_variable>
-
-/* Third-party headers */
-#include "dbg.h"
+#include <queue>
 
 /* Local headers */
+#include "Logger.h"
 #include "Singleton.h"
-#include "Buffer.h"
-#include "BlockingQueue.h"
 #include "FileUtil.h"
 #include "Timestamp.h"
 
 /* 线程安全的异步日志后端 */
 class AsyncLogger : Singletonable {
 public:
-    using Buffer = FixedBuffer<512 KB>;
+    using Buffer = FixedBuffer<512_KB>;
     using BufferPtr = std::unique_ptr<Buffer>;
     using BufferQueue = std::queue<BufferPtr>;
-
-    static const std::string gHeader;
-    static const int gMaxFileSize;
 
 public:
     AsyncLogger(std::filesystem::path, int = 3);

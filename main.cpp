@@ -26,7 +26,7 @@ atomic<int> t2 = 0;
 atomic<int> t3 = 0;
 atomic<int> t4 = 0;
 atomic<int> t5 = 0;
-int times = 1000000;
+int times = 100000;
 int sleepTime = 0;
 
 void thread1() {
@@ -95,6 +95,7 @@ public:
 #include <filesystem>
 #include <fstream>
 #include "PerformanceAnalyser.h"
+#include "SyncLogger.h"
 
 /* Logger 最高写入速度可达 193 MB/s */
 int main() {
@@ -106,19 +107,33 @@ int main() {
         )
     );
 
-    AsyncLogger al("log.log");
-    Logger::setLogger(std::bind(&AsyncLogger::append, &al, std::placeholders::_1));
-    al.start();
+    // AsyncLogger al("log.log");
+    // Logger::setLogger(std::bind(&AsyncLogger::append, &al, std::placeholders::_1));
+    // al.start();
+
+    SyncLogger sl("log.log");
+    Logger::setLogger(std::bind(&SyncLogger::append, &sl, std::placeholders::_1));
 
     Singleton<TimeAnalyser>::instance().start("main");
 
-    for(int i = 0; i < times; i++) {
+    for(int i = 0; i < times * 10; i++) {
         LOG_INFO("LOG_INFO: {}", t1++);
+        // LOG_INFO("LOG_INFOLOG_INFOLOG_INFOLOG_INFOLOG_INFOLOG_INFO");
     }
 
-    // mutex mutex_;
-    // for(int i = 0; i < 1000; i++) {
-    //     unique_lock<mutex> lock(mutex_);
+    // auto func = [] {
+    //     for(int i = 0; i < times; i++) {
+    //         LOG_INFO("LOG_INFOLOG_INFOLOG_INFOLOG_INFOLOG_INFOLOG_INFO");
+    //     }
+    // };
+
+    // vector<thread> vec;
+    // for(int i = 0; i < 10; i++) {
+    //     vec.push_back(thread(func));
+    // }
+
+    // for(auto& t : vec) {
+    //     t.join();
     // }
 
     // thread t1(thread1);
