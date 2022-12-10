@@ -28,6 +28,7 @@ if(fmt_FOUND)
 endif()
 
 add_subdirectory(logger)
+add_subdirectory(example)
 
 include_directories(utils)
 include_directories(logger)

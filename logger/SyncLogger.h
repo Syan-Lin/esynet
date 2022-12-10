@@ -14,7 +14,7 @@
 class SyncLogger : Singletonable {
 public:
     SyncLogger(std::filesystem::path);
-    ~SyncLogger() = default;
+    ~SyncLogger();
 
     void append(const std::string&);
 

@@ -32,6 +32,10 @@ void Logger::setLogLevel(LogLevel level) {
     gLogLevel = level;
 }
 
+void Logger::setLoggerDefault() {
+    gSubmitLog = std::bind(logToConsole, std::placeholders::_1);
+}
+
 const std::string& Logger::levelToString(LogLevel level) {
     switch(level) {
         case DEBUG: return gLogName.at(DEBUG);

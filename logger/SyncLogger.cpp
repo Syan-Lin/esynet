@@ -5,6 +5,10 @@ SyncLogger::SyncLogger(std::filesystem::path path) :
     file_->open();
 }
 
+SyncLogger::~SyncLogger() {
+    Logger::setLoggerDefault();
+}
+
 void SyncLogger::append(const std::string& data) {
     std::unique_lock<std::mutex> lock(mutex_);
     if(data.size() > Logger::gMaxFileSize) {

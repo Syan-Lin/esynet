@@ -11,6 +11,7 @@ AsyncLogger::~AsyncLogger() {
     if(running_) {
         stop();
     }
+    Logger::setLoggerDefault();
 }
 
 void AsyncLogger::start() {

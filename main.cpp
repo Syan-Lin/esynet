@@ -107,11 +107,11 @@ int main() {
         )
     );
 
-    // AsyncLogger al("log.log");
+    // AsyncLogger al("log/log.log");
     // Logger::setLogger(std::bind(&AsyncLogger::append, &al, std::placeholders::_1));
     // al.start();
 
-    SyncLogger sl("log.log");
+    SyncLogger sl("log/log.log");
     Logger::setLogger(std::bind(&SyncLogger::append, &sl, std::placeholders::_1));
 
     Singleton<TimeAnalyser>::instance().start("main");

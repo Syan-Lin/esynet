@@ -15,6 +15,11 @@
 /* Local headers */
 #include "Timestamp.h"
 #include "FileUtil.h"
+#include "SyncLogger.h"
+#include "AsyncLogger.h"
+
+class SyncLogger;
+class AsyncLogger;
 
 /* 用户所使用的 Logger 前端，具体 Log 任务通过 BackEndFunction 传递给后端
  * 通过宏使用，每次都会创建新对象，所以不用保证线程安全 */
@@ -23,10 +28,17 @@ public:
     enum LogLevel { NONE, DEBUG, INFO, WARN, ERROR, FATAL, };
     using BackEndFunction = std::function<void(const std::string& msg)>;
     using StrMap = std::unordered_map<LogLevel, std::string>;
-    static void setLogger(BackEndFunction);
     static void setLogLevel(LogLevel);
     static const std::string gHeader;
     static const int gMaxFileSize;
+    static void setLoggerDefault();
+    static void setLogger(BackEndFunction);
+    template<typename LogBackEnd>
+    static void setLogger(LogBackEnd& logger, typename std::enable_if<
+                        std::is_same<LogBackEnd, SyncLogger>::value ||
+                        std::is_same<LogBackEnd, AsyncLogger>::value>::type* = 0) {
+        gSubmitLog = std::bind(&LogBackEnd::append, &logger, std::placeholders::_1);
+    }
 
 private:
     static LogLevel gLogLevel;
