@@ -28,9 +28,14 @@ public:
     enum LogLevel { NONE, DEBUG, INFO, WARN, ERROR, FATAL, };
     using BackEndFunction = std::function<void(const std::string& msg)>;
     using StrMap = std::unordered_map<LogLevel, std::string>;
-    static void setLogLevel(LogLevel);
+
+    /* Logger 配置 */
     static const std::string gHeader;
     static const int gMaxFileSize;
+    static const LogLevel gLogLevel;
+    static fmt::string_view gFormat;
+    static fmt::string_view gRename;
+
     static void setLoggerDefault();
     static void setLogger(BackEndFunction);
     template<typename LogBackEnd>
@@ -41,10 +46,8 @@ public:
     }
 
 private:
-    static LogLevel gLogLevel;
     static BackEndFunction gSubmitLog;
     static const StrMap gLogName;
-    static fmt::string_view gFormat;
     const std::string& levelToString(LogLevel level);
 
 public:
@@ -80,7 +83,6 @@ private:
     std::string getThreadId();
     const std::string& getDate(Timestamp&);
     std::string getTime(Timestamp&);
-    void loadConfig();
 
 private:
     Timestamp time_;

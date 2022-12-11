@@ -15,7 +15,7 @@
 /* 线程安全的异步日志后端 */
 class AsyncLogger : Singletonable {
 public:
-    using Buffer = FixedBuffer<512_KB>;
+    using Buffer = FixedBuffer<4_MB>;
     using BufferPtr = std::unique_ptr<Buffer>;
     using BufferQueue = std::queue<BufferPtr>;
 

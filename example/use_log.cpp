@@ -50,10 +50,21 @@ int main() {
     /* 注意：对应的输出行为仅在后端对象存在时有效，如日志后端对象销毁
      * 则日志系统会将日志写入到默认输出流(cout)
      */
-    synclog(filepath);  /* 同步日志 */
-    asynclog(filepath); /* 异步日志 */
+    synclog(filepath);  /* 线程安全的同步日志 */
+    LOG_INFO("should print to console");
+    asynclog(filepath); /* 线程安全的异步日志 */
+    LOG_INFO("should print to console");
     customlog();        /* 自定义日志函数 */
+    LOG_INFO("should print to console");
     customObj();        /* 自定义日志后端 */
+    LOG_INFO("should print to console");
+
+    /* TODO: 一些可选设置:
+     * 1. 设置日志级别
+     * 2. 设置日志格式（文件头/消息格式）
+     * 3. 设置日志文件最大大小
+     * 4. 设置日志文件命名
+     */
 
     return 0;
 }

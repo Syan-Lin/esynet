@@ -9,13 +9,13 @@ static void logToConsole(const std::string& msg) {
     std::cout << msg;
 }
 
-Logger::LogLevel Logger::gLogLevel = Logger::LogLevel::INFO;
-fmt::string_view Logger::gFormat = "{:10} {:15} {:4} {:5} {:15} {:20} {:<5} {}\n";
-const std::string Logger::gHeader = "Date       Time            Tid  Level File            Function             Line  Msg\n";
-const int Logger::gMaxFileSize = 100_MB;
-
-Logger::BackEndFunction Logger::gSubmitLog = std::bind(logToConsole, std::placeholders::_1);
-const Logger::StrMap Logger::gLogName = {
+/* Logger 配置 */
+const Logger::LogLevel  Logger::gLogLevel    = Logger::LogLevel::INFO;
+const std::string       Logger::gHeader      = "Date       Time            Tid  Level File            Function             Line  Msg\n";
+const int               Logger::gMaxFileSize = 100_MB;
+fmt::string_view        Logger::gFormat      = "{:10} {:15} {:4} {:5} {:15} {:20} {:<5} {}\n";
+Logger::BackEndFunction Logger::gSubmitLog   = std::bind(logToConsole, std::placeholders::_1);
+const Logger::StrMap    Logger::gLogName     = {
     {Logger::NONE, "None"},
     {Logger::DEBUG, "Debug"},
     {Logger::INFO, "Info"},
@@ -24,18 +24,8 @@ const Logger::StrMap Logger::gLogName = {
     {Logger::FATAL, "Fatal"}
 };
 
-void Logger::setLogger(BackEndFunction func) {
-    gSubmitLog = func;
-}
-
-void Logger::setLogLevel(LogLevel level) {
-    gLogLevel = level;
-}
-
-void Logger::setLoggerDefault() {
-    gSubmitLog = std::bind(logToConsole, std::placeholders::_1);
-}
-
+void Logger::setLogger(BackEndFunction func) { gSubmitLog = func; }
+void Logger::setLoggerDefault() { gSubmitLog = std::bind(logToConsole, std::placeholders::_1); }
 const std::string& Logger::levelToString(LogLevel level) {
     switch(level) {
         case DEBUG: return gLogName.at(DEBUG);
@@ -48,23 +38,10 @@ const std::string& Logger::levelToString(LogLevel level) {
     return Logger::gLogName.at(NONE);
 }
 
-void Logger::loadConfig() {
-    static bool loaded = false;
-    if(loaded) return;
-    /* TODO:
-     * 1. 配置日志消息 format
-     * 2. 配置日志级别
-     * 3. 配置文件头
-     * 4. 配置最大文件大小
-     */
-    loaded = true;
-}
-
 Logger::Logger(const char* file, int line, const char* func, LogLevel level)
         : line_(line), func_(func), level_(level) {
     file_ = strrchr(file, '/') + 1;
     time_ = Timestamp::now();
-    loadConfig();
 }
 
 std::string Logger::getThreadId() {
@@ -94,8 +71,8 @@ std::string Logger::getTime(Timestamp& time) {
     time_t seconds = microseconds / Timestamp::kMicroSecondsPerSecond;
     if(seconds != lastSecond) {
         lastSecond = seconds;
-        secondStr = fmt::format("{:%H:%M:%S}", fmt::localtime(seconds));
+        secondStr = fmt::format("{:%H:%M:%S}.", fmt::localtime(seconds));
     }
     microseconds %= Timestamp::kMicroSecondsPerSecond;
-    return secondStr + fmt::format(".{:06d}", microseconds);
+    return secondStr + fmt::format("{:06d}", microseconds);
 }
