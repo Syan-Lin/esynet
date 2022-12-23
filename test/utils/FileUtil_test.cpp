@@ -50,13 +50,13 @@ TEST_CASE("FileUtil_Read_Test"){
 
         SUBCASE("read once string") {
             CHECK(fr.read() == "");
-            CHECK(fr.current() == 0);
+            CHECK(fr.current() == -1);
         }
 
         SUBCASE("read once char*") {
             fr.read(buf, 1024);
             CHECK(std::string(buf) == "");
-            CHECK(fr.current() == 0);
+            CHECK(fr.current() == -1);
         }
 
         SUBCASE("read muiti char*") {
@@ -68,7 +68,7 @@ TEST_CASE("FileUtil_Read_Test"){
                 memset(buf, 0, 4);
             }
             CHECK(data == "");
-            CHECK(fr.current() == 0);
+            CHECK(fr.current() == -1);
         }
     }
 }

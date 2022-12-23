@@ -20,9 +20,9 @@ public:
         }
     }
 
-    bool exists() { return std::filesystem::exists(path_); }
-    std::string filename() { return path_.filename(); }
-    int filesize() { return filesize_; }
+    bool        exists()    { return std::filesystem::exists(path_); }
+    std::string filename()  { return path_.filename(); }
+    int         filesize()  { return filesize_; }
 
     void rename(std::string filename) {
         if(!fileOutput_.is_open()) return;
@@ -62,9 +62,9 @@ public:
         }
     }
 
-    bool exists() { return std::filesystem::exists(path_); }
-    std::string filename() { return path_.filename(); }
-    int current() { return current_; }
+    bool        exists()    { return std::filesystem::exists(path_); }
+    std::string filename()  { return path_.filename(); }
+    int         current()   { return current_; }
     int filesize() {
         if(!exists()) return -1;
         if(!fileInput_.is_open()) open();
@@ -75,6 +75,7 @@ public:
     void open() {
         if(fileInput_.is_open() || !exists()) return;
         fileInput_.open(path_.c_str(), std::ios::in);
+        current_ = 0;
     }
 
     /* 使用该接口请保证 buf 足够大 */
@@ -115,7 +116,7 @@ public:
 
 private:
     static const int BUFFER_SIZE = 1_MB;
-    int current_ = 0;
+    int current_ = -1;
     char buffer_[BUFFER_SIZE + 1];
     std::ifstream fileInput_;
     const std::filesystem::path path_;

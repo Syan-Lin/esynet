@@ -101,10 +101,8 @@ public:
 int main() {
     TimeStatistics ts;
     Singleton<TimeAnalyser>::instance().addStat(
-        std::bind(
-            &TimeStatistics::stat, &ts,
-            std::placeholders::_1, std::placeholders::_2
-        )
+        std::bind(&TimeStatistics::stat, &ts,
+            std::placeholders::_1, std::placeholders::_2)
     );
 
     // AsyncLogger al("log/log.log");
@@ -118,7 +116,6 @@ int main() {
 
     for(int i = 0; i < times * 10; i++) {
         LOG_INFO("LOG_INFO: {}", t1++);
-        // LOG_INFO("LOG_INFOLOG_INFOLOG_INFOLOG_INFOLOG_INFOLOG_INFO");
     }
 
     // auto func = [] {
