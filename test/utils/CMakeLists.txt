@@ -1,4 +1,4 @@
-include_directories(${PROJECT_SOURCE_DIR}/utils)
+include_directories(${ESYNET_SOURCE_DIR})
 
 add_executable(FileUtil_Test FileUtil_test.cpp)
 

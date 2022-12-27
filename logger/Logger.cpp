@@ -44,6 +44,7 @@ Logger::Logger(const char* file, int line, const char* func, LogLevel level)
     time_ = Timestamp::now();
 }
 
+/* 线程数超过300时，线程ID后四位有可能发生重复 */
 std::string Logger::getThreadId() {
     std::stringstream ss;
     ss << std::this_thread::get_id();

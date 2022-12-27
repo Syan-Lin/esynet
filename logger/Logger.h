@@ -1,6 +1,6 @@
 #pragma once
 
-/* System headers */
+/* Standard headers */
 #include <filesystem>
 #include <mutex>
 #include <iostream>
@@ -13,10 +13,8 @@
 #include <fmt/chrono.h>
 
 /* Local headers */
-#include "Timestamp.h"
-#include "FileUtil.h"
-#include "SyncLogger.h"
-#include "AsyncLogger.h"
+#include "utils/Timestamp.h"
+#include "utils/FileUtil.h"
 
 class SyncLogger;
 class AsyncLogger;

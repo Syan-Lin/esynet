@@ -1,4 +1,4 @@
-include_directories(${PROJECT_SOURCE_DIR}/logger)
+include_directories(${ESYNET_SOURCE_DIR})
 
 add_executable(Timestamp_Test Timestamp_test.cpp)
 

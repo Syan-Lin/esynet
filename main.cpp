@@ -1,10 +1,10 @@
-#include "Timestamp.h"
-#include "Singleton.h"
+#include "utils/Timestamp.h"
+#include "utils/Singleton.h"
 #include <dbg.h>
-#include "Logger.h"
-#include "Buffer.h"
-#include "FileUtil.h"
-#include "AsyncLogger.h"
+#include "logger/Logger.h"
+#include "utils/Buffer.h"
+#include "utils/FileUtil.h"
+#include "logger/AsyncLogger.h"
 #include <fmt/format.h>
 #include <fmt/color.h>
 
@@ -94,8 +94,8 @@ public:
 
 #include <filesystem>
 #include <fstream>
-#include "PerformanceAnalyser.h"
-#include "SyncLogger.h"
+#include "utils/PerformanceAnalyser.h"
+#include "logger/SyncLogger.h"
 
 /* Logger 最高写入速度可达 193 MB/s */
 int main() {

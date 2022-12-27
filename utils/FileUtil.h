@@ -1,6 +1,6 @@
 #pragma once
 
-/* System headers */
+/* Standard headers */
 #include <filesystem>
 #include <fstream>
 #include <cstring>
@@ -87,7 +87,6 @@ public:
         current_ += len > filesize() ? filesize() : len;
         if(current_ > filesize()) current_ = filesize();
     }
-
     std::string read(size_t len = 0) {
         if(!exists()) return "";
         if(!fileInput_.is_open()) open();

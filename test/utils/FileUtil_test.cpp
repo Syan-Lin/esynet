@@ -2,7 +2,7 @@
 #define DOCTEST_CONFIG_COLORS_ANSI
 #include <doctest/doctest.h>
 #include <cstdio>
-#include "FileUtil.h"
+#include "utils/FileUtil.h"
 
 TEST_CASE("FileUtil_Read_Test"){
     remove("non-exist.txt");

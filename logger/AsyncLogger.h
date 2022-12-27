@@ -1,16 +1,16 @@
 #pragma once
 
-/* System headers */
+/* Standard headers */
 #include <filesystem>
 #include <mutex>
 #include <condition_variable>
 #include <queue>
 
 /* Local headers */
-#include "Logger.h"
-#include "Singleton.h"
-#include "FileUtil.h"
-#include "Timestamp.h"
+#include "logger/Logger.h"
+#include "utils/Singleton.h"
+#include "utils/FileUtil.h"
+#include "utils/Timestamp.h"
 
 /* 线程安全的异步日志后端 */
 class AsyncLogger : Singletonable {

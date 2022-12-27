@@ -1,7 +1,7 @@
 #define DOCTEST_CONFIG_IMPLEMENT_WITH_MAIN
 #define DOCTEST_CONFIG_COLORS_ANSI
 #include <doctest/doctest.h>
-#include "Timestamp.h"
+#include "utils/Timestamp.h"
 
 TEST_CASE("Timestamp_Test"){
     auto time = Timestamp::now();
