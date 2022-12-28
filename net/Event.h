@@ -12,21 +12,21 @@
 class EventLoop;
 
 /* TODO: 名称改为Event */
-class Channel : public NonCopyable {
+class Event : public NonCopyable {
 public:
     using Callback = std::function<void()>;
 
 public:
-    Channel(EventLoop&, int);
+    Event(EventLoop&, int);
 
-    void handleEvent();
+    void handle();
     void setReadCallback(Callback);
     void setWriteCallback(Callback);
     void setErrorCallback(Callback);
 
     short fd() const;
-    short events() const;
-    void setRevents(int);
+    short listenedEvent() const;
+    void setHappenedEvent(int);
 
     /* 设置监听事件 */
     void enableReading();
@@ -55,9 +55,9 @@ private:
 
     EventLoop& loop_;
     const int fd_;
-    short events_;
-    short revents_;
-    int index_;
+    short listenedEvents_;
+    short happenedEvents_;
+    int indexInPoll_;
 
     Callback readCallback_;
     Callback writeCallback_;

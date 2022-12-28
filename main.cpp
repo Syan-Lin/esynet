@@ -96,57 +96,31 @@ public:
 #include <fstream>
 #include "utils/PerformanceAnalyser.h"
 #include "logger/SyncLogger.h"
+#include "net/EventLoop.h"
+#include "net/Event.h"
+#include <sys/timerfd.h>
 
-/* Logger 最高写入速度可达 193 MB/s */
+std::string gStrForTest;
+
+// void timeOut(EventLoop& loop) {
+//     gStrForTest += "t";
+//     loop.stop();
+// }
+
 int main() {
-    TimeStatistics ts;
-    Singleton<TimeAnalyser>::instance().addStat(
-        std::bind(&TimeStatistics::stat, &ts,
-            std::placeholders::_1, std::placeholders::_2)
-    );
+    // int timer_fd = timerfd_create(CLOCK_MONOTONIC, TFD_NONBLOCK | TFD_CLOEXEC);
+    // struct itimerspec howlong;
+    // bzero(&howlong, sizeof howlong);
+    // howlong.it_value.tv_sec = 2;
+    // timerfd_settime(timer_fd, 0, &howlong, NULL);
 
-    // AsyncLogger al("log/log.log");
-    // Logger::setLogger(std::bind(&AsyncLogger::append, &al, std::placeholders::_1));
-    // al.start();
+    EventLoop loop(false);
+    Event event(loop, 1);
+    // event.setReadCallback(std::bind(timeOut, std::ref(loop)));
+    // event.enableReading(); /* 会委托 loop 更新 poll */
 
-    SyncLogger sl("log/log.log");
-    Logger::setLogger(std::bind(&SyncLogger::append, &sl, std::placeholders::_1));
-
-    Singleton<TimeAnalyser>::instance().start("main");
-
-    for(int i = 0; i < times * 10; i++) {
-        LOG_INFO("LOG_INFO: {}", t1++);
-    }
-
-    // auto func = [] {
-    //     for(int i = 0; i < times; i++) {
-    //         LOG_INFO("LOG_INFOLOG_INFOLOG_INFOLOG_INFOLOG_INFOLOG_INFO");
-    //     }
-    // };
-
-    // vector<thread> vec;
-    // for(int i = 0; i < 10; i++) {
-    //     vec.push_back(thread(func));
-    // }
-
-    // for(auto& t : vec) {
-    //     t.join();
-    // }
-
-    // thread t1(thread1);
-    // thread t2(thread2);
-    // thread t3(thread3);
-    // thread t4(thread4);
-    // thread t5(thread5);
-    // t1.join();
-    // t2.join();
-    // t3.join();
-    // t4.join();
-    // t5.join();
-
-    Singleton<TimeAnalyser>::instance().stop("main");
-
-    dbg(ts.toString(TimeAnalyser::SECONDS));
+    // loop.loop();
+    // close(timer_fd);
 
     return 0;
 }

@@ -5,8 +5,7 @@
 
 /* Local headers */
 #include "net/poller/Poller.h"
-#include "net/Channel.h"
-#include "logger/Logger.h"
+#include "net/Event.h"
 
 class EpollPoller : public Poller {
 public:
@@ -15,17 +14,17 @@ public:
     EpollPoller(EventLoop&);
     ~EpollPoller() override;
 
-    Timestamp poll(ChannelList&, int) override;
-    void updateChannel(Channel&) override;
-    void removeChannel(Channel&) override;
+    Timestamp poll(EventList&, int) override;
+    void updateEvent(Event&) override;
+    void removeEvent(Event&) override;
 
 private:
     using EpollEvent = struct epoll_event;
     using EpollEventList = std::vector<EpollEvent>;
 
 private:
-    void epollUpdate(int, Channel&);
-    void fillActiveChannels(int, ChannelList&) const;
+    void epollUpdate(int, Event&);
+    void fillActiveEvents(int, EventList&) const;
     EpollEventList epollEvents_;
     int epollFd_;
 };

@@ -1,4 +1,6 @@
-#include "SyncLogger.h"
+#include "logger/SyncLogger.h"
+#include "logger/Logger.h"
+#include "utils/Timestamp.h"
 
 SyncLogger::SyncLogger(std::filesystem::path path) :
         file_(new FileWriter(std::filesystem::current_path()/path)) {

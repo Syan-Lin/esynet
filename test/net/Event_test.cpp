@@ -2,9 +2,10 @@
 #define DOCTEST_CONFIG_COLORS_ANSI
 #include <doctest/doctest.h>
 #include <cstdio>
-#include "utils/Buffer.h"
+#include "net/EventLoop.h"
+#include "net/Event.h"
 
-/* TODO: buffer test */
-TEST_CASE("Buffer_Test"){
-
+/* TODO: Event_Test */
+TEST_CASE("Event_Test"){
+    EventLoop loop;
 }

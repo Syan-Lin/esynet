@@ -7,10 +7,8 @@
 #include <queue>
 
 /* Local headers */
-#include "logger/Logger.h"
 #include "utils/Singleton.h"
 #include "utils/FileUtil.h"
-#include "utils/Timestamp.h"
 
 /* 线程安全的异步日志后端 */
 class AsyncLogger : Singletonable {

@@ -34,7 +34,7 @@ if(fmt_FOUND)
 endif()
 
 # 子目录
-add_subdirectory(utils)
+# add_subdirectory(utils)
 add_subdirectory(net)
 add_subdirectory(logger)
 add_subdirectory(example)
@@ -42,11 +42,13 @@ add_subdirectory(example)
 # 头文件路径
 include_directories(${ESYNET_SOURCE_DIR})
 
+# 作为第三方库
+# add_library(esynet)
+# target_link_libraries(esynet fmt::fmt logger utils net)
+
 # 构建样例程序
 if(BUILD_EXAMPLE)
-    add_executable(main_for_test main.cpp)
-    target_link_libraries(main_for_test fmt::fmt)
-    target_link_libraries(main_for_test logger)
-    target_link_libraries(main_for_test utils)
-    target_link_libraries(main_for_test net)
+    add_executable(main_for_test test.cpp)
+    target_link_libraries(main_for_test fmt::fmt logger net)
+    # target_link_libraries(main_for_test utils)
 endif()

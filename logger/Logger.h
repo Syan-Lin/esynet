@@ -14,7 +14,6 @@
 
 /* Local headers */
 #include "utils/Timestamp.h"
-#include "utils/FileUtil.h"
 
 class SyncLogger;
 class AsyncLogger;

@@ -1,4 +1,6 @@
-#include "AsyncLogger.h"
+#include "logger/AsyncLogger.h"
+#include "logger/Logger.h"
+#include "utils/Timestamp.h"
 
 AsyncLogger::AsyncLogger(std::filesystem::path path, int flushInterval) :
         file_(new FileWriter(std::filesystem::current_path()/path)), flushInterval_(flushInterval)  {

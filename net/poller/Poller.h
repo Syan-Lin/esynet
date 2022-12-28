@@ -9,24 +9,24 @@
 #include "utils/Timestamp.h"
 
 class EventLoop;
-class Channel;
+class Event;
 
 class Poller : public NonCopyable {
 public:
-    using ChannelList = std::vector<Channel*>;
+    using EventList = std::vector<Event*>;
 
 public:
     Poller(EventLoop& loop);
     virtual ~Poller() = default;
 
-    virtual Timestamp poll(ChannelList&, int) = 0;
-    virtual void updateChannel(Channel&) = 0;
-    virtual void removeChannel(Channel&) = 0;
+    virtual Timestamp poll(EventList&, int) = 0;
+    virtual void updateEvent(Event&) = 0;
+    virtual void removeEvent(Event&) = 0;
 
 protected:
-    using ChannelMap = std::map<int, Channel*>;
+    using EventMap = std::map<int, Event*>;
 
 protected:
     EventLoop& loop_;
-    ChannelMap channels_;
+    EventMap events_;
 };

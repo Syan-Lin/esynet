@@ -54,6 +54,7 @@ private:
     char* cur_;
 };
 
+/* TODO: Buffer for net */
 class Buffer {
 
 };

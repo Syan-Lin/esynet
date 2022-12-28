@@ -7,8 +7,6 @@
 /* Local headers */
 #include "utils/Singleton.h"
 #include "utils/FileUtil.h"
-#include "utils/Timestamp.h"
-#include "logger/Logger.h"
 
 /* 线程安全的同步日志后端 */
 class SyncLogger : Singletonable {
