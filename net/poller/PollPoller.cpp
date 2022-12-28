@@ -1,5 +1,8 @@
 #include "net/poller/PollPoller.h"
+
+/* Local headers */
 #include "logger/Logger.h"
+#include "net/Event.h"
 
 PollPoller::PollPoller(EventLoop& loop) : Poller(loop) {}
 
@@ -38,28 +41,30 @@ void PollPoller::updateEvent(Event& event) {
         } else if(events_[event.fd()] != &event) {
             LOG_ERROR("Event(fd: {}) not the same", event.fd());
         }
-        PollFd& pfd = pollfds_.at(event.index());
-        pfd.events = event.listenedEvent();
-        pfd.revents = 0;
+        if(event.listenedEvent() < 0) {
+            removeEvent(event);
+        } else {
+            PollFd& pfd = pollfds_.at(event.index());
+            pfd.events = event.listenedEvent();
+            pfd.revents = 0;
+        }
     }
 }
 
 void PollPoller::removeEvent(Event& event) {
     LOG_DEBUG("Remove event(fd: {})", event.fd());
-    if(event.index() < 0) {
-        return;
+    events_.erase(event.fd());
+    int index = event.index();
+    if(index >= pollfds_.size() || index < 0) {
+        LOG_ERROR("Event(fd: {}) index out of range", event.fd());
+    }
+    if(index == pollfds_.size() - 1) {
+        pollfds_.pop_back();
     } else {
-        if(events_.find(event.fd()) == events_.end()) {
-            LOG_ERROR("Event(fd: {}) not exists", event.fd());
-        } else if(events_[event.fd()] != &event) {
-            LOG_ERROR("Event(fd: {}) not the same", event.fd());
-        }
-        events_.erase(event.fd());
-        int index = event.index();
-        if(index >= pollfds_.size()) {
-            LOG_ERROR("Event(fd: {}) index out of range", event.fd());
-        }
-        pollfds_.erase(pollfds_.begin() + index);
+        int lastFd = pollfds_.back().fd;
+        std::iter_swap(pollfds_.begin() + index, pollfds_.end() - 1);
+        pollfds_.pop_back();
+        events_[lastFd]->setIndex(index);
         event.setIndex(-event.fd() - 1);
     }
 }

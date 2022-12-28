@@ -1,41 +1,127 @@
-#include <ctime>
 #define DOCTEST_CONFIG_IMPLEMENT_WITH_MAIN
 #define DOCTEST_CONFIG_COLORS_ANSI
 #include <doctest/doctest.h>
-#include <cstdio>
+#include <functional>
 #include <sys/timerfd.h>
 #include "net/EventLoop.h"
 #include "net/Event.h"
+
+#include <dbg.h>
 
 /* 使用 timefd 来测试 EventLoop 及其相关类 */
 
 std::string gStrForTest;
 
-void timeOut(EventLoop& loop) {
-    gStrForTest += "t";
+void readCallBack(Event& event) {
+    gStrForTest += "r";
+    event.disableReading();
+    dbg(gStrForTest);
+}
+void writeCallBack(Event& event) {
+    gStrForTest += "w";
+    event.disableWriting();
+    dbg(gStrForTest);
+}
+void errorCallBack(Event& event) {
+    gStrForTest += "e";
+    event.disableAll();
+    dbg(gStrForTest);
+}
+void stopLoop(EventLoop& loop) {
     loop.stop();
 }
 
 /* TODO: EventLoop_Test */
 TEST_CASE("EventLoop_Test"){
     SUBCASE("PollPoller") {
+        gStrForTest.clear();
+        EventLoop loop(false);
+
+        /* 用于关闭loop */
+        int close_fd = timerfd_create(CLOCK_MONOTONIC, TFD_NONBLOCK | TFD_CLOEXEC);
+        dbg(close_fd);
+        struct itimerspec closetime;
+        bzero(&closetime, sizeof closetime);
+        closetime.it_value.tv_sec = 2;
+        timerfd_settime(close_fd, 0, &closetime, NULL);
+        Event stopEvent(loop, close_fd);
+        stopEvent.setReadCallback(std::bind(stopLoop, std::ref(loop)));
+        stopEvent.enableReading();
+
+        /* 测试读事件监听 */
         int timer_fd = timerfd_create(CLOCK_MONOTONIC, TFD_NONBLOCK | TFD_CLOEXEC);
+        dbg(timer_fd);
         struct itimerspec howlong;
         bzero(&howlong, sizeof howlong);
-        howlong.it_value.tv_sec = 2;
+        howlong.it_value.tv_sec = 1;
         timerfd_settime(timer_fd, 0, &howlong, NULL);
 
-        EventLoop loop(false);
-        Event event(loop, timer_fd);
-        event.setReadCallback(std::bind(timeOut, std::ref(loop)));
-        event.enableReading(); /* 会委托 loop 更新 poll */
+        Event readEvent(loop, timer_fd);
+        readEvent.setReadCallback(std::bind(readCallBack, std::ref(readEvent)));
+        readEvent.enableReading(); /* 会委托 loop 更新 poll */
+
+        /* 测试写事件监听 */
+        int write_fd = fileno(stdout);
+        dbg(write_fd);
+
+        Event writeEvent(loop, write_fd);
+        writeEvent.setWriteCallback(std::bind(writeCallBack, std::ref(writeEvent)));
+        writeEvent.enableWriting(); /* 会委托 loop 更新 poll */
+
+        sleep(1);
+
+        /* 测试错误事件监听 */
+        Event errorEvent(loop, 1024);
+        errorEvent.setErrorCallback(std::bind(errorCallBack, std::ref(errorEvent)));
+        errorEvent.enableReading();
 
         loop.loop();
         close(timer_fd);
-        CHECK(gStrForTest == "t");
+        CHECK(gStrForTest == "rwe");
     }
 
     SUBCASE("EpollPoller") {
+        gStrForTest.clear();
         EventLoop loop;
+
+        /* 用于关闭loop */
+        int close_fd = timerfd_create(CLOCK_MONOTONIC, TFD_NONBLOCK | TFD_CLOEXEC);
+        dbg(close_fd);
+        struct itimerspec closetime;
+        bzero(&closetime, sizeof closetime);
+        closetime.it_value.tv_sec = 2;
+        timerfd_settime(close_fd, 0, &closetime, NULL);
+        Event stopEvent(loop, close_fd);
+        stopEvent.setReadCallback(std::bind(stopLoop, std::ref(loop)));
+        stopEvent.enableReading();
+
+        /* 测试读事件监听 */
+        int timer_fd = timerfd_create(CLOCK_MONOTONIC, TFD_NONBLOCK | TFD_CLOEXEC);
+        dbg(timer_fd);
+        struct itimerspec howlong;
+        bzero(&howlong, sizeof howlong);
+        howlong.it_value.tv_sec = 1;
+        timerfd_settime(timer_fd, 0, &howlong, NULL);
+
+        Event readEvent(loop, timer_fd);
+        readEvent.setReadCallback(std::bind(readCallBack, std::ref(readEvent)));
+        readEvent.enableReading(); /* 会委托 loop 更新 poll */
+
+        /* 测试写事件监听 */
+        int write_fd = fileno(stdout);
+        dbg(write_fd);
+
+        Event writeEvent(loop, write_fd);
+        writeEvent.setWriteCallback(std::bind(writeCallBack, std::ref(writeEvent)));
+        writeEvent.enableWriting(); /* 会委托 loop 更新 poll */
+
+        /* 测试错误事件监听 */
+        Event errorEvent(loop, 1024);
+        errorEvent.setErrorCallback(std::bind(errorCallBack, std::ref(errorEvent)));
+        errorEvent.enableReading();
+
+        loop.loop();
+        close(timer_fd);
+        CHECK(gStrForTest == "ewr");
     }
 }

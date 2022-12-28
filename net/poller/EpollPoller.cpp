@@ -1,5 +1,8 @@
 #include "net/poller/EpollPoller.h"
+
+/* Local headers */
 #include "logger/Logger.h"
+#include "net/Event.h"
 
 const int EpollPoller::kInitEventListSize = 16;
 
@@ -35,6 +38,7 @@ void EpollPoller::updateEvent(Event& event) {
         if(events_.find(event.fd()) != events_.end()) {
             LOG_ERROR("Event(fd: {}) already exists", event.fd());
         }
+        if(event.listenedEvent() < 0) return;
         epollUpdate(EPOLL_CTL_ADD, event);
     } else {
         /* 更新列表 */
@@ -43,21 +47,31 @@ void EpollPoller::updateEvent(Event& event) {
         } else if(events_[event.fd()] != &event) {
             LOG_ERROR("Event(fd: {}) not the same", event.fd());
         }
-        epollUpdate(EPOLL_CTL_MOD, event);
+        if(event.listenedEvent() < 0) {
+            removeEvent(event);
+        } else {
+            epollUpdate(EPOLL_CTL_MOD, event);
+        }
     }
 }
 
 void EpollPoller::removeEvent(Event& event) {
     LOG_DEBUG("Remove event(fd: {})", event.fd());
-    if(event.index() < 0) {
-        return;
+    epollUpdate(EPOLL_CTL_DEL, event);
+
+    events_.erase(event.fd());
+    int index = event.index();
+    if(index >= epollEvents_.size() || index < 0) {
+        LOG_ERROR("Event(fd: {}) index out of range", event.fd());
+    }
+    if(index == epollEvents_.size() - 1) {
+        epollEvents_.pop_back();
     } else {
-        if(events_.find(event.fd()) == events_.end()) {
-            LOG_ERROR("Event(fd: {}) not exists", event.fd());
-        } else if(events_[event.fd()] != &event) {
-            LOG_ERROR("Event(fd: {}) not the same", event.fd());
-        }
-        epollUpdate(EPOLL_CTL_DEL, event);
+        int lastFd = epollEvents_.back().data.fd;
+        std::iter_swap(epollEvents_.begin() + index, epollEvents_.end() - 1);
+        epollEvents_.pop_back();
+        events_[lastFd]->setIndex(index);
+        event.setIndex(-event.fd() - 1);
     }
 }
 
@@ -66,20 +80,14 @@ void EpollPoller::epollUpdate(int operation, Event& event) {
     epollEvent.events = event.listenedEvent();
     epollEvent.data.fd = event.fd();
     if(epoll_ctl(epollFd_, operation, event.fd(), &epollEvent) < 0) {
-        LOG_ERROR("epoll_ctl({}) error", operation);
+        LOG_ERROR("epoll_ctl({}, fd: {}) error", operation, event.fd());
+        event.setHappenedEvent(errno);
+        event.handle();
     }
     if(operation == EPOLL_CTL_ADD) {
         epollEvents_.push_back(epollEvent);
         event.setIndex(epollEvents_.size() - 1);
         events_[event.fd()] = &event;
-    } else if(operation == EPOLL_CTL_DEL) {
-        events_.erase(event.fd());
-        int index = event.index();
-        if(index >= epollEvents_.size()) {
-            LOG_ERROR("Event(fd: {}) index out of range", event.fd());
-        }
-        epollEvents_.erase(epollEvents_.begin() + index);
-        event.setIndex(-event.fd() - 1);
     }
 }
 

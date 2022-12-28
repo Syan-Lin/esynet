@@ -4,14 +4,13 @@
 #include <functional>
 
 /* Linux headers */
-#include <sys/epoll.h>
+#include <sys/poll.h>
 
 /* Local headers */
 #include "utils/NonCopyable.h"
 
 class EventLoop;
 
-/* TODO: 名称改为Event */
 class Event : public NonCopyable {
 public:
     using Callback = std::function<void()>;
@@ -45,9 +44,9 @@ private:
     /* EPOLLIN 等宏定义应该与 POLLIN 等宏定义一致 */
     enum {
         kNoneEvent = -1,
-        kReadEvent = EPOLLIN | EPOLLPRI,
-        kWriteEvent = EPOLLOUT,
-        kErrorEvent = EPOLLERR
+        kReadEvent = POLLIN | POLLPRI,
+        kErrorEvent = POLLERR | POLLNVAL,
+        kWriteEvent = POLLOUT,
     };
 
 private:

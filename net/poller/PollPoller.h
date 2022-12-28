@@ -5,7 +5,6 @@
 
 /* Local headers */
 #include "net/poller/Poller.h"
-#include "net/Event.h"
 
 class PollPoller : public Poller {
 public:

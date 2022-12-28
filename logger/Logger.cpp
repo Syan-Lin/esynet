@@ -11,7 +11,7 @@ static void logToConsole(const std::string& msg) {
 }
 
 /* Logger 配置 */
-const Logger::LogLevel  Logger::gLogLevel    = Logger::LogLevel::INFO;
+const Logger::LogLevel  Logger::gLogLevel    = Logger::LogLevel::DEBUG;
 const std::string       Logger::gHeader      = "Date       Time            Tid  Level File            Function             Line  Msg\n";
 const int               Logger::gMaxFileSize = 100_MB;
 fmt::string_view        Logger::gFormat      = "{:10} {:15} {:4} {:5} {:15} {:20} {:<5} {}\n";

@@ -16,7 +16,7 @@ public:
     using EventList = std::vector<Event*>;
 
 public:
-    Poller(EventLoop& loop);
+    Poller(EventLoop& loop): loop_(loop) {};
     virtual ~Poller() = default;
 
     virtual Timestamp poll(EventList&, int) = 0;

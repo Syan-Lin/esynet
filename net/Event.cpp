@@ -1,4 +1,6 @@
 #include "net/Event.h"
+
+/* Local headers */
 #include "net/EventLoop.h"
 
 Event::Event(EventLoop& loop, int fd)
@@ -17,34 +19,38 @@ void Event::handle() {
     }
 }
 
-inline void Event::setReadCallback(Callback callback) {
+void Event::setReadCallback(Callback callback) {
     readCallback_ = callback;
 }
-inline void Event::setWriteCallback(Callback callback) {
+void Event::setWriteCallback(Callback callback) {
     writeCallback_ = callback;
 }
-inline void Event::setErrorCallback(Callback callback) {
+void Event::setErrorCallback(Callback callback) {
     errorCallback_ = callback;
 }
 
-inline short Event::fd() const { return fd_; }
-inline short Event::listenedEvent() const { return listenedEvents_; }
-inline void Event::setHappenedEvent(int event) { happenedEvents_ = event; }
+short Event::fd() const { return fd_; }
+short Event::listenedEvent() const { return listenedEvents_; }
+void Event::setHappenedEvent(int event) { happenedEvents_ = event; }
 
 void Event::enableReading() {
+    if(listenedEvents_ == kNoneEvent) listenedEvents_ = 0;
     listenedEvents_ |= kReadEvent;
     update();
 }
 void Event::enableWriting() {
+    if(listenedEvents_ == kNoneEvent) listenedEvents_ = 0;
     listenedEvents_ |= kWriteEvent;
     update();
 }
 void Event::disableWriting() {
     listenedEvents_ &= ~kWriteEvent;
+    if(listenedEvents_ == 0) listenedEvents_ = kNoneEvent;
     update();
 }
 void Event::disableReading() {
     listenedEvents_ &= ~kReadEvent;
+    if(listenedEvents_ == 0) listenedEvents_ = kNoneEvent;
     update();
 }
 void Event::disableAll() {
@@ -52,8 +58,8 @@ void Event::disableAll() {
     update();
 }
 
-inline int Event::index() const { return indexInPoll_; }
-inline void Event::setIndex(int index) { indexInPoll_ = index; }
+int Event::index() const { return indexInPoll_; }
+void Event::setIndex(int index) { indexInPoll_ = index; }
 EventLoop* Event::ownerLoop() const { return &loop_; }
 
 void Event::update() {
