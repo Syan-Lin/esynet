@@ -3,6 +3,7 @@
 #include <cstddef>
 #include <cstring>
 #include <string>
+#include <vector>
 
 #include "StringPiece.h"
 
@@ -19,16 +20,15 @@ constexpr int operator""_GB(unsigned long long num) {
     return num * 1024 * 1024 * 1024;
 }
 
-/* FixedBuffer 性能更好 */
 template<int SIZE>
-class FixedBuffer {
+class LogBuffer {
 public:
-    FixedBuffer() : cur_(data_) {}
-    FixedBuffer(const FixedBuffer&)             = default;
-    FixedBuffer(FixedBuffer&&)                  = default;
-    FixedBuffer& operator=(const FixedBuffer&)  = default;
-    FixedBuffer& operator=(FixedBuffer&&)       = default;
-    ~FixedBuffer()                              = default;
+    LogBuffer() : cur_(data_) {}
+    LogBuffer(const LogBuffer&)             = default;
+    LogBuffer(LogBuffer&&)                  = default;
+    LogBuffer& operator=(const LogBuffer&)  = default;
+    LogBuffer& operator=(LogBuffer&&)       = default;
+    ~LogBuffer()                              = default;
 
     /* 在 append 之前请保证缓冲区足够大 */
     void append(StringArg buf) {
@@ -55,26 +55,5 @@ private:
 };
 
 class Buffer {
-public:
-    Buffer() = default;
-    Buffer(const Buffer&)            = default;
-    Buffer(Buffer&&)                 = default;
-    Buffer& operator=(const Buffer&) = default;
-    Buffer& operator=(Buffer&&)      = default;
-    ~Buffer()                        = default;
 
-    void append(StringArg buf) { data_ += std::string(buf.c_str()); }
-
-    const char* data() const { return data_.c_str(); }
-    std::string toString() { return data_; }
-
-    size_t length() const { return data_.length(); }
-    size_t capacity() const { return data_.max_size(); }
-    size_t remain() const { return data_.max_size() - length(); }
-
-    void reset() { data_.clear(); }
-    void bzero() { data_ = std::string(char(0), length()); }
-
-private:
-    std::string data_;
 };

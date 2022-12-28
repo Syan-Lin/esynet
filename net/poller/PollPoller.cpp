@@ -61,7 +61,7 @@ void PollPoller::removeChannel(Channel& channel) {
             LOG_ERROR("Channel(fd: {}) index out of range", channel.fd());
         }
         pollfds_.erase(pollfds_.begin() + index);
-        channel.setIndex(-1);
+        channel.setIndex(-channel.fd() - 1);
     }
 }
 

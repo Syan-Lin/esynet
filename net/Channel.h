@@ -11,6 +11,7 @@
 
 class EventLoop;
 
+/* TODO: 名称改为Event */
 class Channel : public NonCopyable {
 public:
     using Callback = std::function<void()>;
@@ -27,12 +28,14 @@ public:
     short events() const;
     void setRevents(int);
 
+    /* 设置监听事件 */
     void enableReading();
     void enableWriting();
     void disableWriting();
     void disableReading();
     void disableAll();
 
+    /* Poller相关 */
     int index() const;
     void setIndex(int);
 
@@ -40,7 +43,7 @@ public:
 
 private:
     /* EPOLLIN 等宏定义应该与 POLLIN 等宏定义一致 */
-    enum Event {
+    enum {
         kNoneEvent = -1,
         kReadEvent = EPOLLIN | EPOLLPRI,
         kWriteEvent = EPOLLOUT,

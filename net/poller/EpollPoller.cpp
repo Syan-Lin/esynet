@@ -76,7 +76,7 @@ void EpollPoller::epollUpdate(int operation, Channel& channel) {
             LOG_ERROR("Channel(fd: {}) index out of range", channel.fd());
         }
         epollEvents_.erase(epollEvents_.begin() + index);
-        channel.setIndex(-1);
+        channel.setIndex(-channel.fd() - 1);
     }
 }
 
