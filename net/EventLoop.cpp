@@ -47,18 +47,21 @@ void EventLoop::loop() {
     }
     stop_ = false;
     isLoopping_ = true;
+    LOG_DEBUG("EventLoop({:p}) start looping", static_cast<void*>(this));
     while(!stop_) {
         activeEvents_.clear();
         /* 获取活动事件 */
-        poller_->poll(activeEvents_, kPollTimeMs);
+        lastPollTime_ = poller_->poll(activeEvents_, kPollTimeMs);
         /* 执行活动事件对应的回调函数 */
         for(auto& event : activeEvents_) {
             event->handle();
         }
     }
+    LOG_DEBUG("EventLoop({:p}) stop looping", static_cast<void*>(this));
     isLoopping_ = false;
 }
 void EventLoop::stop() { stop_ = true; }
+Timestamp EventLoop::lastPollTime() const { return lastPollTime_; }
 
 /* 将Event委托的update转发给poller */
 void EventLoop::updateEvent(Event& event) {
@@ -69,9 +72,10 @@ void EventLoop::updateEvent(Event& event) {
     poller_->updateEvent(event);
 }
 
-inline bool EventLoop::isInLoopThread() const {
+bool EventLoop::isInLoopThread() const {
     return tid_ == std::this_thread::get_id();
 }
+bool EventLoop::isLoopping() const { return isLoopping_; }
 
 std::string EventLoop::tidToStr() const {
     std::stringstream ss;

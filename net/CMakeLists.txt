@@ -1,5 +1,6 @@
 aux_source_directory(. NET_SRCS)
 aux_source_directory(./poller NET_SRCS)
+aux_source_directory(./timer NET_SRCS)
 
 message(STATUS "NET_SRCS = ${NET_SRCS}")
 

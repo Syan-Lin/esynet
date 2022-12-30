@@ -28,33 +28,34 @@ public:
     bool operator!=(const Timestamp& rhs) const {
         return microSecondsSinceEpoch_ != rhs.microSecondsSinceEpoch_;
     }
-    /* 单位: 秒 */
+    /* 单位: 毫秒 */
     double operator-(const Timestamp& rhs) const {
-        return static_cast<double>(microSecondsSinceEpoch_ - rhs.microSecondsSinceEpoch_) / kMicroSecondsPerSecond;
+        return static_cast<double>(microSecondsSinceEpoch_ - rhs.microSecondsSinceEpoch_) / kMilliSecondsPerSecond;
     }
-    Timestamp& operator+(double seconds) {
-        microSecondsSinceEpoch_ += static_cast<int64_t>(seconds * kMicroSecondsPerSecond);
+    Timestamp& operator+(double milliSeconds) {
+        microSecondsSinceEpoch_ += static_cast<int64_t>(milliSeconds * kMilliSecondsPerSecond);
         return *this;
     }
-    Timestamp& operator+=(double seconds) {
-        microSecondsSinceEpoch_ += static_cast<int64_t>(seconds * kMicroSecondsPerSecond);
+    Timestamp& operator+=(double milliSeconds) {
+        microSecondsSinceEpoch_ += static_cast<int64_t>(milliSeconds * kMilliSecondsPerSecond);
         return *this;
     }
-    Timestamp& operator-(double seconds) {
-        microSecondsSinceEpoch_ -= static_cast<int64_t>(seconds * kMicroSecondsPerSecond);
+    Timestamp& operator-(double milliSeconds) {
+        microSecondsSinceEpoch_ -= static_cast<int64_t>(milliSeconds * kMilliSecondsPerSecond);
         return *this;
     }
-    Timestamp& operator-=(double seconds) {
-        microSecondsSinceEpoch_ -= static_cast<int64_t>(seconds * kMicroSecondsPerSecond);
+    Timestamp& operator-=(double milliSeconds) {
+        microSecondsSinceEpoch_ -= static_cast<int64_t>(milliSeconds * kMilliSecondsPerSecond);
         return *this;
     }
 
     static const int kMicroSecondsPerSecond = 1000 * 1000;
+    static const int kMilliSecondsPerSecond = 1000;
     std::string toString() const {
         std::stringstream ss;
         int64_t seconds = microSecondsSinceEpoch_ / kMicroSecondsPerSecond;
         int64_t microseconds = microSecondsSinceEpoch_ % kMicroSecondsPerSecond;
-        ss << seconds << "." << microseconds;
+        ss << seconds << "." << std::setfill('0') << std::setw(6) << microseconds;
         return ss.str();
     }
     /* reference: https://en.cppreference.com/w/cpp/io/manip/put_time */
@@ -67,7 +68,7 @@ public:
         ss << put_time(localtime(&time_seconds), format);
         if(showMicroseconds) {
             time_t time_microseconds = microSecondsSinceEpoch_ % kMicroSecondsPerSecond;
-            ss << "." << time_microseconds;
+            ss << "." << std::setfill('0') << std::setw(6) << time_microseconds;
         }
         return ss.str();
     }

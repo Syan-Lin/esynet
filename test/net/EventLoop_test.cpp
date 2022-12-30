@@ -6,8 +6,6 @@
 #include "net/EventLoop.h"
 #include "net/Event.h"
 
-#include <dbg.h>
-
 /* 使用 timefd 来测试 EventLoop 及其相关类 */
 
 std::string gStrForTest;
@@ -15,23 +13,22 @@ std::string gStrForTest;
 void readCallBack(Event& event) {
     gStrForTest += "r";
     event.disableReading();
-    dbg(gStrForTest);
+    event.disableReading();
 }
 void writeCallBack(Event& event) {
     gStrForTest += "w";
     event.disableWriting();
-    dbg(gStrForTest);
+    event.disableWriting();
 }
 void errorCallBack(Event& event) {
     gStrForTest += "e";
     event.disableAll();
-    dbg(gStrForTest);
+    event.disableAll();
 }
 void stopLoop(EventLoop& loop) {
     loop.stop();
 }
 
-/* TODO: EventLoop_Test */
 TEST_CASE("EventLoop_Test"){
     SUBCASE("PollPoller") {
         gStrForTest.clear();
@@ -39,7 +36,6 @@ TEST_CASE("EventLoop_Test"){
 
         /* 用于关闭loop */
         int close_fd = timerfd_create(CLOCK_MONOTONIC, TFD_NONBLOCK | TFD_CLOEXEC);
-        dbg(close_fd);
         struct itimerspec closetime;
         bzero(&closetime, sizeof closetime);
         closetime.it_value.tv_sec = 2;
@@ -47,10 +43,12 @@ TEST_CASE("EventLoop_Test"){
         Event stopEvent(loop, close_fd);
         stopEvent.setReadCallback(std::bind(stopLoop, std::ref(loop)));
         stopEvent.enableReading();
+        stopEvent.disableReading();
+        stopEvent.enableReading();
+        stopEvent.disableWriting();
 
         /* 测试读事件监听 */
         int timer_fd = timerfd_create(CLOCK_MONOTONIC, TFD_NONBLOCK | TFD_CLOEXEC);
-        dbg(timer_fd);
         struct itimerspec howlong;
         bzero(&howlong, sizeof howlong);
         howlong.it_value.tv_sec = 1;
@@ -62,7 +60,6 @@ TEST_CASE("EventLoop_Test"){
 
         /* 测试写事件监听 */
         int write_fd = fileno(stdout);
-        dbg(write_fd);
 
         Event writeEvent(loop, write_fd);
         writeEvent.setWriteCallback(std::bind(writeCallBack, std::ref(writeEvent)));
@@ -86,7 +83,6 @@ TEST_CASE("EventLoop_Test"){
 
         /* 用于关闭loop */
         int close_fd = timerfd_create(CLOCK_MONOTONIC, TFD_NONBLOCK | TFD_CLOEXEC);
-        dbg(close_fd);
         struct itimerspec closetime;
         bzero(&closetime, sizeof closetime);
         closetime.it_value.tv_sec = 2;
@@ -94,10 +90,12 @@ TEST_CASE("EventLoop_Test"){
         Event stopEvent(loop, close_fd);
         stopEvent.setReadCallback(std::bind(stopLoop, std::ref(loop)));
         stopEvent.enableReading();
+        stopEvent.disableReading();
+        stopEvent.enableReading();
+        stopEvent.disableWriting();
 
         /* 测试读事件监听 */
         int timer_fd = timerfd_create(CLOCK_MONOTONIC, TFD_NONBLOCK | TFD_CLOEXEC);
-        dbg(timer_fd);
         struct itimerspec howlong;
         bzero(&howlong, sizeof howlong);
         howlong.it_value.tv_sec = 1;
@@ -109,7 +107,6 @@ TEST_CASE("EventLoop_Test"){
 
         /* 测试写事件监听 */
         int write_fd = fileno(stdout);
-        dbg(write_fd);
 
         Event writeEvent(loop, write_fd);
         writeEvent.setWriteCallback(std::bind(writeCallBack, std::ref(writeEvent)));

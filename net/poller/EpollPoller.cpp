@@ -26,7 +26,7 @@ Timestamp EpollPoller::poll(EventList& activeEvents, int timeoutMs) {
     } else if(numEvents == 0) {
         LOG_DEBUG("Nothing happened");
     } else {
-        LOG_ERROR("Poller poll error");
+        LOG_ERROR("epoll_wait error: {}", strerror(errno));
     }
     return pollTime;
 }
@@ -34,6 +34,7 @@ Timestamp EpollPoller::poll(EventList& activeEvents, int timeoutMs) {
 void EpollPoller::updateEvent(Event& event) {
     LOG_DEBUG("Update event(fd: {}, events: {})", event.fd(), event.listenedEvent());
     if(event.index() < 0) {
+        if(event.listenedEvent() < 0) return;
         /* 添加至列表 */
         if(events_.find(event.fd()) != events_.end()) {
             LOG_ERROR("Event(fd: {}) already exists", event.fd());
@@ -71,8 +72,8 @@ void EpollPoller::removeEvent(Event& event) {
         std::iter_swap(epollEvents_.begin() + index, epollEvents_.end() - 1);
         epollEvents_.pop_back();
         events_[lastFd]->setIndex(index);
-        event.setIndex(-event.fd() - 1);
     }
+    event.setIndex(-event.fd() - 1);
 }
 
 void EpollPoller::epollUpdate(int operation, Event& event) {
@@ -80,7 +81,8 @@ void EpollPoller::epollUpdate(int operation, Event& event) {
     epollEvent.events = event.listenedEvent();
     epollEvent.data.fd = event.fd();
     if(epoll_ctl(epollFd_, operation, event.fd(), &epollEvent) < 0) {
-        LOG_ERROR("epoll_ctl({}, fd: {}) error", operation, event.fd());
+        LOG_ERROR("epoll_ctl(op: {}, fd: {}, errno: {}) error",
+                    operation, event.fd(), strerror(errno));
         event.setHappenedEvent(errno);
         event.handle();
     }

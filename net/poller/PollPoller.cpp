@@ -3,6 +3,7 @@
 /* Local headers */
 #include "logger/Logger.h"
 #include "net/Event.h"
+#include <cstring>
 
 PollPoller::PollPoller(EventLoop& loop) : Poller(loop) {}
 
@@ -15,7 +16,7 @@ Timestamp PollPoller::poll(EventList& activeEvents, int timeoutMs) {
     } else if(numEvents == 0) {
         LOG_DEBUG("Nothing happened");
     } else {
-        LOG_ERROR("Poller poll error");
+        LOG_ERROR("poll error: {}", strerror(errno));
     }
     return pollTime;
 }
@@ -23,6 +24,7 @@ Timestamp PollPoller::poll(EventList& activeEvents, int timeoutMs) {
 void PollPoller::updateEvent(Event& event) {
     LOG_DEBUG("Update event(fd: {}, events: {})", event.fd(), event.listenedEvent());
     if(event.index() < 0) {
+        if(event.listenedEvent() < 0) return;
         /* 添加至列表 */
         if(events_.find(event.fd()) != events_.end()) {
             LOG_ERROR("Event(fd: {}) already exists", event.fd());
@@ -65,8 +67,8 @@ void PollPoller::removeEvent(Event& event) {
         std::iter_swap(pollfds_.begin() + index, pollfds_.end() - 1);
         pollfds_.pop_back();
         events_[lastFd]->setIndex(index);
-        event.setIndex(-event.fd() - 1);
     }
+    event.setIndex(-event.fd() - 1);
 }
 
 void PollPoller::fillActiveEvents(int numEvents, EventList& activeEvents) const {
