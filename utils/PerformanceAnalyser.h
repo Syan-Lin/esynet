@@ -7,6 +7,8 @@
 #include <iomanip>
 #include <fmt/format.h>
 
+namespace esynet::utils {
+
 /* 非线程安全，频繁计时有一定的性能损失，每次调用约有 数十纳秒 的开销 */
 class TimeAnalyser {
 public:
@@ -116,3 +118,5 @@ private:
 class MemoryAnalyser {
 
 };
+
+} /* namespace esynet::utils */

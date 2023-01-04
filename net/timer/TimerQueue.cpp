@@ -3,11 +3,12 @@
 /* Linux headers */
 #include <sys/timerfd.h>
 
-#include <dbg.h>
-
 /* Local headers */
 #include "net/EventLoop.h"
 #include "logger/Logger.h"
+
+using esynet::timer::TimerQueue;
+using esynet::timer::Timer;
 
 int TimerQueue::createTimerFd() {
     int timerfd = timerfd_create(CLOCK_REALTIME, TFD_NONBLOCK | TFD_CLOEXEC);
@@ -17,6 +18,8 @@ int TimerQueue::createTimerFd() {
     }
     return timerfd;
 }
+
+/* 监听超时时间更新为最近的超时时间 */
 void TimerQueue::updateTimerFd() {
     struct itimerspec closeTime;
     bzero(&closeTime, sizeof closeTime);

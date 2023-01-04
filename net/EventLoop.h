@@ -8,10 +8,13 @@
 #include <mutex>
 
 /* Local headers */
+#include "net/timer/TimerQueue.h"
 #include "utils/NonCopyable.h"
 #include "utils/Timestamp.h"
 #include "net/poller/Poller.h"
 #include "net/timer/Timer.h"
+
+namespace esynet {
 
 class Event;
 
@@ -21,12 +24,23 @@ class Event;
  * 所以这些类都不必是线程安全的，不会发生跨线程调用
  *
  *
- * 注意：没有特殊说明，则代表非线程安全 */
+ * 注意：
+ *      1.没有特殊说明，则代表非线程安全
+ *      2.不要设为全局变量                      */
 
-class EventLoop : public NonCopyable {
+class EventLoop : public utils::NonCopyable {
 public:
     static EventLoop* getEvtlpOfCurThread();
     static int kPollTimeMs;
+
+private:
+    using EventList = std::vector<Event*>;
+    using Timer = timer::Timer;
+    using TimerQueue = timer::TimerQueue;
+    using Poller = poller::Poller;
+    using Timestamp = utils::Timestamp;
+    std::string tidToStr() const;
+
 public:
     EventLoop(bool = true);
     ~EventLoop();
@@ -46,11 +60,8 @@ public:
     bool isLoopping() const;        /* 线程安全 */
 
 private:
-    using EventList = std::vector<Event*>;
-    std::string tidToStr() const;
-
-private:
     std::unique_ptr<Poller> poller_;
+    std::unique_ptr<TimerQueue> timerQueue_;
     EventList activeEvents_;
 
     Timestamp lastPollTime_;
@@ -58,3 +69,5 @@ private:
     std::atomic<bool> isLoopping_;
     const std::thread::id tid_;
 };
+
+} /* namespace esynet */

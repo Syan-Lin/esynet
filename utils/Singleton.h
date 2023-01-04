@@ -3,6 +3,8 @@
 #include <memory>
 #include <mutex>
 
+namespace esynet::utils {
+
 class Singletonable {
 public:
     Singletonable(const Singletonable&)  = delete;
@@ -48,3 +50,5 @@ std::once_flag Singleton<T>::init_flag_;
 
 template<typename T>
 std::once_flag Singleton<T>::dest_flag_;
+
+} /* namespace esynet::utils */

@@ -1,6 +1,12 @@
 #include "logger/AsyncLogger.h"
+
+/* Local headers */
 #include "logger/Logger.h"
 #include "utils/Timestamp.h"
+
+using esynet::logger::AsyncLogger;
+using esynet::utils::FileWriter;
+using esynet::utils::Timestamp;
 
 AsyncLogger::AsyncLogger(std::filesystem::path path, int flushInterval) :
         file_(new FileWriter(std::filesystem::current_path()/path)), flushInterval_(flushInterval)  {

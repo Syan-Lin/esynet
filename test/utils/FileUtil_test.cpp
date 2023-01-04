@@ -3,6 +3,8 @@
 #include <doctest/doctest.h>
 #include "utils/FileUtil.h"
 
+using namespace esynet::utils;
+
 TEST_CASE("FileUtil_Read_Test"){
     remove("non-exist.txt");
     std::fstream fs("test.txt", std::fstream::out | std::fstream::trunc);

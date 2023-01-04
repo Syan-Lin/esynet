@@ -20,6 +20,8 @@ constexpr int operator""_GB(unsigned long long num) {
     return num * 1024 * 1024 * 1024;
 }
 
+namespace esynet::utils {
+
 template<int SIZE>
 class LogBuffer {
 public:
@@ -58,3 +60,5 @@ private:
 class Buffer {
 
 };
+
+} /* namespace esynet::utils */

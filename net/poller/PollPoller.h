@@ -6,12 +6,14 @@
 /* Local headers */
 #include "net/poller/Poller.h"
 
+namespace esynet::poller {
+
 class PollPoller : public Poller {
 public:
     PollPoller(EventLoop& loop);
     ~PollPoller() override = default;
 
-    Timestamp poll(EventList&, int) override;
+    utils::Timestamp poll(EventList&, int) override;
     void updateEvent(Event&) override;
     void removeEvent(Event&) override;
 
@@ -23,3 +25,5 @@ private:
     void fillActiveEvents(int, EventList&) const;
     PollFdList pollfds_;
 };
+
+} /* namespace esynet::poller */

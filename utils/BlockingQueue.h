@@ -4,6 +4,8 @@
 #include <queue>
 #include <condition_variable>
 
+namespace esynet::utils {
+
 /* 线程安全队列，如果队列为空，dequeue 操作会阻塞
  * Notice: 存储智能指针可以避免不必要的拷贝 */
 template <typename T>
@@ -50,3 +52,5 @@ private:
     std::mutex queue_lock_;
     std::condition_variable cond_;
 };
+
+} /* namespace esynet::utils */

@@ -15,8 +15,14 @@
 /* Local headers */
 #include "utils/Timestamp.h"
 
+namespace esynet::logger {
+
 class SyncLogger;
 class AsyncLogger;
+
+}
+
+namespace esynet {
 
 /* 用户所使用的 Logger 前端，具体 Log 任务通过 BackEndFunction 传递给后端
  * 通过宏使用，每次都会创建新对象，所以不用保证线程安全 */
@@ -37,12 +43,13 @@ public:
     static void setLogger(BackEndFunction);
     template<typename LogBackEnd>
     static void setLogger(LogBackEnd& logger, typename std::enable_if<
-                        std::is_same<LogBackEnd, SyncLogger>::value ||
-                        std::is_same<LogBackEnd, AsyncLogger>::value>::type* = 0) {
+                        std::is_same<LogBackEnd, logger::SyncLogger>::value ||
+                        std::is_same<LogBackEnd, logger::AsyncLogger>::value>::type* = 0) {
         gSubmitLog = std::bind(&LogBackEnd::append, &logger, std::placeholders::_1);
     }
 
 private:
+    using Timestamp = utils::Timestamp;
     static BackEndFunction gSubmitLog;
     static const StrMap gLogName;
     const std::string& levelToString(LogLevel level);
@@ -88,6 +95,8 @@ private:
     int line_;
     LogLevel level_;
 };
+
+} /* namespace esynet */
 
 #define LOG_DEBUG(fmt, ...) Logger(__FILE__, __LINE__, __func__, Logger::LogLevel::DEBUG).log(fmt, ##__VA_ARGS__)
 #define LOG_INFO(fmt, ...)  Logger(__FILE__, __LINE__, __func__, Logger::LogLevel::INFO ).log(fmt, ##__VA_ARGS__)

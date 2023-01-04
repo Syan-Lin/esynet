@@ -9,9 +9,11 @@
 /* Local headers */
 #include "utils/NonCopyable.h"
 
+namespace esynet {
+
 class EventLoop;
 
-class Event : public NonCopyable {
+class Event : public utils::NonCopyable {
 public:
     using Callback = std::function<void()>;
 
@@ -62,3 +64,5 @@ private:
     Callback writeCallback_;
     Callback errorCallback_;
 };
+
+} /* namespace esynet */

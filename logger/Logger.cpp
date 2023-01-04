@@ -1,5 +1,9 @@
 #include "logger/Logger.h"
+
+/* Local headers */
 #include "utils/FileUtil.h"
+
+using esynet::Logger;
 
 static void logToConsole(const std::string& msg) {
     static bool first = true;

@@ -1,4 +1,8 @@
 #include "net/timer/Timer.h"
+#include "utils/Timestamp.h"
+
+using esynet::timer::Timer;
+using esynet::utils::Timestamp;
 
 std::atomic<Timer::ID> Timer::idCounter_(0);
 Timer::ID Timer::nextId() { return idCounter_++; }

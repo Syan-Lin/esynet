@@ -3,6 +3,8 @@
 #include <doctest/doctest.h>
 #include "utils/Timestamp.h"
 
+using namespace esynet::utils;
+
 TEST_CASE("Timestamp_Test"){
     Timestamp time0;    /* 1970-01-01 08:00:00 */
     Timestamp time1(123456);

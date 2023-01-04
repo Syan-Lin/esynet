@@ -7,6 +7,10 @@
 /* Local headers */
 #include "utils/Timestamp.h"
 
+namespace esynet::timer {
+
+using utils::Timestamp;
+
 class Timer {
 public:
     using Callback = std::function<void()>;
@@ -34,3 +38,5 @@ private:
     Timestamp expiration_;
 
 };
+
+} /* namespace esynet::timer */

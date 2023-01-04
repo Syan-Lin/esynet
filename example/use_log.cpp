@@ -3,6 +3,8 @@
 #include "logger/AsyncLogger.h"
 
 using namespace std;
+using namespace esynet;
+using namespace esynet::logger;
 
 void synclog(std::string& path) {
     SyncLogger sl(path);

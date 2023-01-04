@@ -6,6 +6,8 @@
 #include "net/EventLoop.h"
 #include "net/Event.h"
 
+using namespace esynet;
+
 /* 使用 timefd 来测试 EventLoop 及其相关类 */
 
 std::string gStrForTest;

@@ -3,6 +3,8 @@
 #include <string.h>
 #include <string>
 
+namespace esynet::utils {
+
 /* 注意: 以下的 String 包装类并不控制字符串的生命周期 */
 
 /* 使用 StringArg 就可以不用声明 const char* 和 std::string 两个版本的函数
@@ -90,3 +92,5 @@ template<> struct __type_traits<muduo::StringPiece> {
     typedef __true_type is_POD_type;
 };
 #endif
+
+} /* namespace esynet::utils */

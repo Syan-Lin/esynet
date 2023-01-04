@@ -3,6 +3,10 @@
 /* Local headers */
 #include "logger/Logger.h"
 #include "net/Event.h"
+#include "utils/Timestamp.h"
+
+using esynet::poller::EpollPoller;
+using esynet::utils::Timestamp;
 
 const int EpollPoller::kInitEventListSize = 16;
 

@@ -8,6 +8,8 @@
 /* Local headers */
 #include "Buffer.h"
 
+namespace esynet::utils {
+
 /* 如果文件或目录不存在，则会创建 */
 class FileWriter {
 public:
@@ -120,3 +122,5 @@ private:
     std::ifstream fileInput_;
     const std::filesystem::path path_;
 };
+
+} /* namespace esynet::utils */

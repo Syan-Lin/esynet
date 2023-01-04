@@ -4,13 +4,15 @@
 #include <functional>
 #include "net/timer/Timer.h"
 
+using namespace esynet::timer;
+
 int g_test = 0;
 
 void callback() {
     g_test++;
 }
 
-TEST_CASE("EventLoop_Test"){
+TEST_CASE("Timer_Test"){
     Timer timer0(callback, Timestamp() + 1, 0);
     Timer timer1(callback, Timestamp() + 2, 10.5);
 
@@ -27,4 +29,5 @@ TEST_CASE("EventLoop_Test"){
     timer1.restart();
     CHECK(timer0.expiration() == Timestamp());
     CHECK(timer1.expiration() > Timestamp::now());
+    CHECK(g_test == 2);
 }

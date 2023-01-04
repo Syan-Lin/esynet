@@ -3,6 +3,9 @@
 /* Local headers */
 #include "net/EventLoop.h"
 
+using esynet::Event;
+using esynet::EventLoop;
+
 Event::Event(EventLoop& loop, int fd)
         : loop_(loop), fd_(fd), listenedEvents_(-1),
           happenedEvents_(0), indexInPoll_(-1) {}

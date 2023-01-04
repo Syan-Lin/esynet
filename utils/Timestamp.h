@@ -4,6 +4,8 @@
 #include <chrono>
 #include <iomanip>
 
+namespace esynet::utils {
+
 class Timestamp {
 public:
     Timestamp() : microSecondsSinceEpoch_(0) {}
@@ -87,3 +89,5 @@ public:
 private:
     int64_t microSecondsSinceEpoch_;
 };
+
+} /* namespace esynet::utils */

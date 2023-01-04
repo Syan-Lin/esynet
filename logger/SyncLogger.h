@@ -8,8 +8,10 @@
 #include "utils/Singleton.h"
 #include "utils/FileUtil.h"
 
+namespace esynet::logger {
+
 /* 线程安全的同步日志后端 */
-class SyncLogger : Singletonable {
+class SyncLogger : utils::Singletonable {
 public:
     SyncLogger(std::filesystem::path);
     ~SyncLogger();
@@ -18,5 +20,7 @@ public:
 
 private:
     std::mutex mutex_;
-    std::unique_ptr<FileWriter> file_;
+    std::unique_ptr<utils::FileWriter> file_;
 };
+
+} /* namespace esynet::logger */

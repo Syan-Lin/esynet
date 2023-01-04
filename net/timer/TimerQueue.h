@@ -8,7 +8,7 @@
 #include "net/timer/Timer.h"
 #include "net/Event.h"
 
-class EventLoop;
+namespace esynet::timer {
 
 /* 负责定时器任务的注册、回调、管理，非线程安全
  * 不保证回调函数一定会准时执行，有可能会因为
@@ -27,6 +27,7 @@ public:
     Timer::ID addTimer(Timer::Callback, Timestamp, double);
     void cancel(Timer::ID);
 
+    /* 由EventLoop调用 */
     void handle();
 
 private:
@@ -41,3 +42,5 @@ private:
     EventLoop& loop_;
     Event timerEvent_;
 };
+
+} /* namespace esynet::timer */

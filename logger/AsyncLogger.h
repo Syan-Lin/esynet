@@ -10,10 +10,12 @@
 #include "utils/Singleton.h"
 #include "utils/FileUtil.h"
 
+namespace esynet::logger {
+
 /* 线程安全的异步日志后端 */
-class AsyncLogger : Singletonable {
+class AsyncLogger : utils::Singletonable {
 public:
-    using Buffer = LogBuffer<4_MB>;
+    using Buffer = utils::LogBuffer<4_MB>;
     using BufferPtr = std::unique_ptr<Buffer>;
     using BufferQueue = std::queue<BufferPtr>;
 
@@ -35,8 +37,10 @@ private:
     std::thread thread_;
     std::atomic<bool> running_;
     std::condition_variable cond_;
-    std::unique_ptr<FileWriter> file_;
+    std::unique_ptr<utils::FileWriter> file_;
     BufferPtr buffer_;                  /* 当前缓冲区 */
     BufferPtr backupBuffer_;            /* 备用缓冲区 */
     BufferQueue buffers_;               /* 将要写入文件的缓存 */
 };
+
+} /* namespace esynet::logger */

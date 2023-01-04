@@ -5,6 +5,14 @@
 #include "logger/Logger.h"
 #include "net/poller/PollPoller.h"
 #include "net/poller/EpollPoller.h"
+#include "net/timer/TimerQueue.h"
+#include "utils/Timestamp.h"
+
+using esynet::EventLoop;
+using esynet::poller::EpollPoller;
+using esynet::poller::PollPoller;
+using esynet::utils::Timestamp;
+using esynet::timer::Timer;
 
 /* 每个线程至多有一个 EventLoop */
 thread_local EventLoop* t_evtlpInCurThread = nullptr;
@@ -31,6 +39,7 @@ EventLoop::EventLoop(bool useEpoll)
     } else {
         poller_ = std::make_unique<PollPoller>(*this);
     }
+    timerQueue_ = std::make_unique<timer::TimerQueue>(*this);
 }
 
 EventLoop::~EventLoop() {
@@ -62,6 +71,18 @@ void EventLoop::loop() {
 }
 void EventLoop::stop() { stop_ = true; }
 Timestamp EventLoop::lastPollTime() const { return lastPollTime_; }
+
+Timer::ID EventLoop::runAt(Timestamp timePoint, Timer::Callback callback) {
+    return timerQueue_->addTimer(callback, timePoint, 0.0);
+}
+
+Timer::ID EventLoop::runAfter(double time, Timer::Callback callback) {
+    return timerQueue_->addTimer(callback, Timestamp::now() + time, 0.0);
+}
+
+Timer::ID EventLoop::runEvery(double time, Timer::Callback callback) {
+    return timerQueue_->addTimer(callback, Timestamp::now(), time);
+}
 
 /* 将Event委托的update转发给poller */
 void EventLoop::updateEvent(Event& event) {

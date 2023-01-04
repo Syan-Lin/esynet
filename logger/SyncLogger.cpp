@@ -1,6 +1,13 @@
 #include "logger/SyncLogger.h"
+
+/* Local headers */
 #include "logger/Logger.h"
+#include "utils/FileUtil.h"
 #include "utils/Timestamp.h"
+
+using esynet::logger::SyncLogger;
+using esynet::utils::FileWriter;
+using esynet::utils::Timestamp;
 
 SyncLogger::SyncLogger(std::filesystem::path path) :
         file_(new FileWriter(std::filesystem::current_path()/path)) {

@@ -8,10 +8,16 @@
 #include "utils/NonCopyable.h"
 #include "utils/Timestamp.h"
 
+namespace esynet {
+
 class EventLoop;
 class Event;
 
-class Poller : public NonCopyable {
+}
+
+namespace esynet::poller {
+
+class Poller : public utils::NonCopyable {
 public:
     using EventList = std::vector<Event*>;
 
@@ -19,7 +25,7 @@ public:
     Poller(EventLoop& loop): loop_(loop) {};
     virtual ~Poller() = default;
 
-    virtual Timestamp poll(EventList&, int) = 0;
+    virtual utils::Timestamp poll(EventList&, int) = 0;
     virtual void updateEvent(Event&) = 0;
     virtual void removeEvent(Event&) = 0;
 
@@ -30,3 +36,5 @@ protected:
     EventLoop& loop_;
     EventMap events_;
 };
+
+} /* namespace esynet::poller */

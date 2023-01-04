@@ -6,5 +6,9 @@ target_link_libraries(EventLoop_test net)
 add_executable(Timer_test Timer_test.cpp)
 target_link_libraries(Timer_test net)
 
-add_test(NAME eventLoop_test COMMAND EventLoop_test)
-add_test(NAME timer_test COMMAND Timer_test)
+add_executable(TimerQueue_test TimerQueue_test.cpp)
+target_link_libraries(TimerQueue_test net)
+
+add_test(NAME EventLoop_test COMMAND EventLoop_test)
+add_test(NAME Timer_test COMMAND Timer_test)
+add_test(NAME TimerQueue_test COMMAND TimerQueue_test)

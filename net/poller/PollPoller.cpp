@@ -3,7 +3,9 @@
 /* Local headers */
 #include "logger/Logger.h"
 #include "net/Event.h"
-#include <cstring>
+
+using esynet::poller::PollPoller;
+using esynet::utils::Timestamp;
 
 PollPoller::PollPoller(EventLoop& loop) : Poller(loop) {}
 
