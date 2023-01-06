@@ -46,18 +46,28 @@ TimerQueue::~TimerQueue() {
 }
 
 Timer::ID TimerQueue::addTimer(Timer::Callback callback, Timestamp when, double interval) {
-    timerMap_[when] = std::make_unique<Timer>(callback, when, interval);
-    timerPositionMap_[timerMap_[when]->id()] = when;
-    updateTimerFd();
-    return timerMap_[when]->id();
+    TimerPtr tp = std::make_unique<Timer>(callback, when, interval);
+    Timer::ID id = tp->id();
+
+    /* 需要保证线程安全的部分 */
+    loop_.runInLoop([this, when, &tp] {
+        timerMap_[when] = std::move(tp);
+        timerPositionMap_[timerMap_[when]->id()] = when;
+        updateTimerFd();
+    });
+
+    return id;
 }
 void TimerQueue::cancel(Timer::ID id) {
-    auto iter = timerPositionMap_.find(id);
-    if(iter != timerPositionMap_.end()) {
-        timerMap_.erase(iter->second);
-        timerPositionMap_.erase(id);
-        updateTimerFd();
-    }
+    /* 需要保证线程安全的部分 */
+    loop_.runInLoop([this, id] {
+        auto iter = timerPositionMap_.find(id);
+        if(iter != timerPositionMap_.end()) {
+            timerMap_.erase(iter->second);
+            timerPositionMap_.erase(id);
+            updateTimerFd();
+        }
+    });
 }
 
 void TimerQueue::handle() {
