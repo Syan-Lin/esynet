@@ -90,7 +90,7 @@ void TimerQueue::handle() {
     }
     updateTimerFd();
 }
-TimerQueue::TimerList TimerQueue::getExpired(Timestamp now) {
+TimerQueue::TimerList TimerQueue::getExpired(Timestamp now) const {
     TimerList expiredList;
     auto iter = timerMap_.begin();
     for(; iter != timerMap_.end() && !(iter->first > now); ++iter) {

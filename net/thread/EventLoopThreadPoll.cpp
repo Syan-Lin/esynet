@@ -14,7 +14,6 @@ void EventLoopThreadPoll::start(size_t num) {
     if(!baseLoop_.isInLoopThread()) {
         LOG_FATAL("Try start thread poll in another thread(baseLoop: {:p})",
                     static_cast<void*>(&baseLoop_));
-        return;
     }
     for(size_t i = 0; i < num; i++) {
         threads_.emplace_back(std::thread([this] {

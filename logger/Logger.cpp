@@ -31,7 +31,7 @@ const Logger::StrMap    Logger::gLogName     = {
 
 void Logger::setLogger(BackEndFunction func) { gSubmitLog = func; }
 void Logger::setLoggerDefault() { gSubmitLog = std::bind(logToConsole, std::placeholders::_1); }
-const std::string& Logger::levelToString(LogLevel level) {
+const std::string& Logger::levelToString(LogLevel level) const {
     switch(level) {
         case DEBUG: return gLogName.at(DEBUG);
         case INFO:  return gLogName.at(INFO);
@@ -50,7 +50,7 @@ Logger::Logger(const char* file, int line, const char* func, LogLevel level)
 }
 
 /* 线程数超过300时，线程ID后四位有可能发生重复 */
-std::string Logger::getThreadId() {
+std::string Logger::getThreadId() const {
     std::stringstream ss;
     ss << std::this_thread::get_id();
     std::string thread_id = ss.str();
@@ -58,7 +58,7 @@ std::string Logger::getThreadId() {
     return thread_id;
 }
 
-const std::string& Logger::getDate(Timestamp& time) {
+const std::string& Logger::getDate(const Timestamp& time) const {
     static time_t lastDay = 0;
     static std::string dateStr = "";
     time_t seconds = time.secondsSinceEpoch();
@@ -70,7 +70,7 @@ const std::string& Logger::getDate(Timestamp& time) {
     return dateStr;
 }
 
-std::string Logger::getTime(Timestamp& time) {
+std::string Logger::getTime(const Timestamp& time) const {
     static time_t lastSecond = 0;
     static std::string secondStr = "";
     int64_t microseconds = time.microSecondsSinceEpoch();

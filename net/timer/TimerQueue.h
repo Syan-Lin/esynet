@@ -31,7 +31,7 @@ public:
     void handle();
 
 private:
-    TimerList getExpired(Timestamp);    /* 获取所有超时事件 */
+    TimerList getExpired(Timestamp) const;    /* 获取所有超时事件 */
     int createTimerFd();
     void updateTimerFd();
 

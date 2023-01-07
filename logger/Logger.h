@@ -52,7 +52,7 @@ private:
     using Timestamp = utils::Timestamp;
     static BackEndFunction gSubmitLog;
     static const StrMap gLogName;
-    const std::string& levelToString(LogLevel level);
+    const std::string& levelToString(LogLevel level) const;
 
 public:
     Logger(const char*, int, const char*, LogLevel);
@@ -84,9 +84,9 @@ public:
     }
 
 private:
-    std::string getThreadId();
-    const std::string& getDate(Timestamp&);
-    std::string getTime(Timestamp&);
+    std::string         getThreadId()             const;
+    const std::string&  getDate(const Timestamp&) const;
+    std::string         getTime(const Timestamp&) const;
 
 private:
     Timestamp time_;
@@ -102,4 +102,4 @@ private:
 #define LOG_INFO(fmt, ...)  Logger(__FILE__, __LINE__, __func__, Logger::LogLevel::INFO ).log(fmt, ##__VA_ARGS__)
 #define LOG_WARN(fmt, ...)  Logger(__FILE__, __LINE__, __func__, Logger::LogLevel::WARN ).log(fmt, ##__VA_ARGS__)
 #define LOG_ERROR(fmt, ...) Logger(__FILE__, __LINE__, __func__, Logger::LogLevel::ERROR).log(fmt, ##__VA_ARGS__)
-#define LOG_FATAL(fmt, ...) Logger(__FILE__, __LINE__, __func__, Logger::LogLevel::FATAL).log(fmt, ##__VA_ARGS__)
+#define LOG_FATAL(fmt, ...) Logger(__FILE__, __LINE__, __func__, Logger::LogLevel::FATAL).log(fmt, ##__VA_ARGS__);abort()

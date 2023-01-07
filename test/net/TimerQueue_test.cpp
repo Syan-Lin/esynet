@@ -5,8 +5,6 @@
 #include "net/timer/TimerQueue.h"
 #include "net/EventLoop.h"
 
-#include <dbg.h>
-
 using namespace esynet;
 using namespace esynet::timer;
 
