@@ -41,18 +41,18 @@ TimerQueue::TimerQueue(EventLoop& loop)
     timerEvent_.enableReading();
 }
 TimerQueue::~TimerQueue() {
-    timerEvent_.disableAll();
+    loop_.removeEvent(timerEvent_);
     close(timerFd_);
 }
 
-Timer::ID TimerQueue::addTimer(Timer::Callback callback, Timestamp when, double interval) {
-    TimerPtr tp = std::make_unique<Timer>(callback, when, interval);
+Timer::ID TimerQueue::addTimer(Timer::Callback callback, Timestamp expiration, double interval) {
+    TimerPtr tp = std::make_unique<Timer>(callback, expiration, interval);
     Timer::ID id = tp->id();
 
     /* 需要保证线程安全的部分 */
-    loop_.runInLoop([this, when, &tp] {
-        timerMap_[when] = std::move(tp);
-        timerPositionMap_[timerMap_[when]->id()] = when;
+    loop_.runInLoop([this, expiration, &tp] {
+        timerMap_[expiration] = std::move(tp);
+        timerPositionMap_[timerMap_[expiration]->id()] = expiration;
         updateTimerFd();
     });
 

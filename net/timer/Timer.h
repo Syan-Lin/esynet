@@ -17,7 +17,7 @@ public:
     using ID = int64_t;
 
 public:
-    Timer(Callback, Timestamp, double);
+    Timer(Callback, Timestamp expiration, double interval);
 
     void run();
     void restart();

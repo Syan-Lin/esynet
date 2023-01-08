@@ -10,7 +10,7 @@
 
 namespace esynet {
 
-/* IPv4 地址 TODO: IPv6 */
+/* IPv4 地址 */
 class InetAddress {
 public:
     /* 根据域名解析IP地址，失败设端口为-1 */
@@ -20,7 +20,7 @@ public:
     using SockAddrIn = struct sockaddr_in;
 
 public:
-    InetAddress(int port);  /* 用于服务端 */
+    InetAddress(int port = 0);  /* 用于服务端 */
     InetAddress(utils::StringArg ip, int port);
 
     std::string ip() const;

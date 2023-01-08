@@ -9,13 +9,13 @@ EventLoopThreadPoll::EventLoopThreadPoll(EventLoop& loop)
     : baseLoop_(loop), start_(false), index_(0) {}
 EventLoopThreadPoll::~EventLoopThreadPoll() { stop(); }
 
-void EventLoopThreadPoll::start(size_t num) {
+void EventLoopThreadPoll::start(size_t numOfThreads) {
     if(start_) return;
     if(!baseLoop_.isInLoopThread()) {
         LOG_FATAL("Try start thread poll in another thread(baseLoop: {:p})",
                     static_cast<void*>(&baseLoop_));
     }
-    for(size_t i = 0; i < num; i++) {
+    for(size_t i = 0; i < numOfThreads; i++) {
         threads_.emplace_back(std::thread([this] {
             /* 线程任务 */
             EventLoop* loop;

@@ -2,6 +2,7 @@
 
 /* Standard headers */
 #include <string>
+#include <memory>
 
 /* Linux headers */
 #include <netinet/tcp.h>
@@ -12,13 +13,18 @@
 
 namespace esynet {
 
-class Socket : public utils::NonCopyable {
-private:
+/* Socket可以任意复制，当所有副本都销毁时才会close */
+class Socket {
+public:
     using TcpInfo = struct tcp_info;
 
 public:
     Socket();
     Socket(int fd);
+    Socket(const Socket&);
+    Socket& operator=(const Socket&);
+    Socket(Socket&&);
+    Socket& operator=(Socket&&);
     ~Socket();
 
     int fd() const;
@@ -41,8 +47,7 @@ public:
     void setKeepAlive(bool);
 
 private:
-    const int fd_;
-
+    std::shared_ptr<const int> fd_;
 };
 
 } /* namespace esynet */

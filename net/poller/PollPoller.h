@@ -13,7 +13,7 @@ public:
     PollPoller(EventLoop& loop);
     ~PollPoller() override = default;
 
-    utils::Timestamp poll(EventList&, int) override;
+    utils::Timestamp poll(EventList&, int timeoutMs) override;
     void updateEvent(Event&) override;
     void removeEvent(Event&) override;
 
@@ -22,8 +22,8 @@ private:
     using PollFdList = std::vector<PollFd>;
 
 private:
-    void fillActiveEvents(int, EventList&) const;
-    PollFdList pollfds_;
+    void fillActiveEvents(int numEvents, EventList&) const;
+    PollFdList pollFds_;
 };
 
 } /* namespace esynet::poller */

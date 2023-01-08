@@ -40,7 +40,7 @@ public:
     static fmt::string_view gRename;
 
     static void setLoggerDefault();
-    static void setLogger(BackEndFunction);
+    static void setLogger(BackEndFunction logger);
     template<typename LogBackEnd>
     static void setLogger(LogBackEnd& logger, typename std::enable_if<
                         std::is_same<LogBackEnd, logger::SyncLogger>::value ||
@@ -55,7 +55,7 @@ private:
     const std::string& levelToString(LogLevel level) const;
 
 public:
-    Logger(const char*, int, const char*, LogLevel);
+    Logger(const char* file, int line, const char* func, LogLevel);
 
     /* 模板函数，必须放在头文件中 */
     template<typename... ARGS>

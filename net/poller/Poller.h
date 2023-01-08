@@ -25,7 +25,7 @@ public:
     Poller(EventLoop& loop): loop_(loop) {};
     virtual ~Poller() = default;
 
-    virtual utils::Timestamp poll(EventList&, int) = 0;
+    virtual utils::Timestamp poll(EventList&, int timeoutMs) = 0;
     virtual void updateEvent(Event&) = 0;
     virtual void removeEvent(Event&) = 0;
 

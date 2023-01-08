@@ -24,14 +24,14 @@ public:
     ~TimerQueue();
 
     /* 线程安全 */
-    Timer::ID addTimer(Timer::Callback, Timestamp, double);
+    Timer::ID addTimer(Timer::Callback, Timestamp expiration, double interval);
     void cancel(Timer::ID);
 
     /* 由EventLoop调用 */
     void handle();
 
 private:
-    TimerList getExpired(Timestamp) const;    /* 获取所有超时事件 */
+    TimerList getExpired(Timestamp now) const;    /* 获取所有超时事件 */
     int createTimerFd();
     void updateTimerFd();
 

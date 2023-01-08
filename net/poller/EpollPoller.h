@@ -15,7 +15,7 @@ public:
     EpollPoller(EventLoop&);
     ~EpollPoller() override;
 
-    utils::Timestamp poll(EventList&, int) override;
+    utils::Timestamp poll(EventList&, int timeoutMs) override;
     void updateEvent(Event&) override;
     void removeEvent(Event&) override;
 
@@ -24,8 +24,8 @@ private:
     using EpollEventList = std::vector<EpollEvent>;
 
 private:
-    void epollUpdate(int, Event&);
-    void fillActiveEvents(int, EventList&) const;
+    void epollUpdate(int operation, Event&);
+    void fillActiveEvents(int numEvents, EventList&) const;
     EpollEventList epollEvents_;
     int epollFd_;
 };

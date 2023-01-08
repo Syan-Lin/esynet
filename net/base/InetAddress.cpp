@@ -18,7 +18,7 @@ InetAddress InetAddress::resolve(utils::StringArg hostname) {
     /* 线程安全 */
     int ret = gethostbyname_r(hostname.c_str(), &queryResult, buf, sizeof buf, &result, &err);
     if (ret == 0 && result != nullptr) {
-        InetAddress inetAddr(0);
+        InetAddress inetAddr;
         SockAddrIn addr;
         addr.sin_addr = *reinterpret_cast<struct in_addr*>(result->h_addr);
         inetAddr.setSockAddr(*reinterpret_cast<SockAddr*>(&addr));

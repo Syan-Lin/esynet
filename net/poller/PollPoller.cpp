@@ -10,7 +10,7 @@ using esynet::utils::Timestamp;
 PollPoller::PollPoller(EventLoop& loop) : Poller(loop) {}
 
 Timestamp PollPoller::poll(EventList& activeEvents, int timeoutMs) {
-    int numEvents = ::poll(&*pollfds_.begin(), pollfds_.size(), timeoutMs);
+    int numEvents = ::poll(&*pollFds_.begin(), pollFds_.size(), timeoutMs);
     Timestamp pollTime(Timestamp::now());
     if(numEvents > 0) {
         LOG_DEBUG("{} events happened", numEvents);
@@ -35,8 +35,8 @@ void PollPoller::updateEvent(Event& event) {
         pfd.fd = event.fd();
         pfd.events = event.listenedEvent();
         pfd.revents = 0;
-        pollfds_.push_back(pfd);
-        event.setIndex(pollfds_.size() - 1);
+        pollFds_.push_back(pfd);
+        event.setIndex(pollFds_.size() - 1);
         events_[pfd.fd] = &event;
     } else {
         /* 更新列表 */
@@ -48,7 +48,7 @@ void PollPoller::updateEvent(Event& event) {
         if(event.listenedEvent() < 0) {
             removeEvent(event);
         } else {
-            PollFd& pfd = pollfds_.at(event.index());
+            PollFd& pfd = pollFds_.at(event.index());
             pfd.events = event.listenedEvent();
             pfd.revents = 0;
         }
@@ -59,22 +59,22 @@ void PollPoller::removeEvent(Event& event) {
     LOG_DEBUG("Remove event(fd: {})", event.fd());
     events_.erase(event.fd());
     int index = event.index();
-    if(index >= pollfds_.size() || index < 0) {
+    if(index >= pollFds_.size() || index < 0) {
         LOG_ERROR("Event(fd: {}) index out of range", event.fd());
     }
-    if(index == pollfds_.size() - 1) {
-        pollfds_.pop_back();
+    if(index == pollFds_.size() - 1) {
+        pollFds_.pop_back();
     } else {
-        int lastFd = pollfds_.back().fd;
-        std::iter_swap(pollfds_.begin() + index, pollfds_.end() - 1);
-        pollfds_.pop_back();
+        int lastFd = pollFds_.back().fd;
+        std::iter_swap(pollFds_.begin() + index, pollFds_.end() - 1);
+        pollFds_.pop_back();
         events_[lastFd]->setIndex(index);
     }
     event.setIndex(-event.fd() - 1);
 }
 
 void PollPoller::fillActiveEvents(int numEvents, EventList& activeEvents) const {
-    for(auto& pfd : pollfds_) {
+    for(auto& pfd : pollFds_) {
         if(pfd.revents > 0) {
             Event* event = events_.at(pfd.fd);
             if(event->fd() != pfd.fd) {

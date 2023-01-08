@@ -21,13 +21,14 @@ public:
     Event(EventLoop&, int);
 
     void handle();
+    void setCloseCallback(Callback);
     void setReadCallback(Callback);
     void setWriteCallback(Callback);
     void setErrorCallback(Callback);
 
     short fd() const;
     short listenedEvent() const;
-    void setHappenedEvent(int);
+    void setHappenedEvent(int event);
 
     /* 设置监听事件 */
     void enableReading();
@@ -49,6 +50,7 @@ private:
         kReadEvent = POLLIN | POLLPRI,
         kErrorEvent = POLLERR | POLLNVAL,
         kWriteEvent = POLLOUT,
+        kCloseEvent = POLLHUP | POLLRDHUP,
     };
 
 private:
@@ -63,6 +65,7 @@ private:
     Callback readCallback_;
     Callback writeCallback_;
     Callback errorCallback_;
+    Callback closeCallback_;
 };
 
 } /* namespace esynet */

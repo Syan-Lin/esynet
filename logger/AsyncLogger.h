@@ -20,7 +20,7 @@ public:
     using BufferQueue = std::queue<BufferPtr>;
 
 public:
-    AsyncLogger(std::filesystem::path, int = 3);
+    AsyncLogger(std::filesystem::path, int flushInterval = 3);
     ~AsyncLogger();
 
     void start();

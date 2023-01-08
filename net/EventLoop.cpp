@@ -38,7 +38,7 @@ int createEventFd() {
 EventLoop::EventLoop(bool useEpoll)
         : stop_(false),
           numOfEvents_(0),
-          isLoopping_(false),
+          isLooping_(false),
           wakeupFd_(createEventFd()),
           wakeupEvent_(*this, wakeupFd_),
           tid_(std::this_thread::get_id()) {
@@ -69,12 +69,12 @@ EventLoop::EventLoop(bool useEpoll)
 }
 
 EventLoop::~EventLoop() {
-    if(isLoopping_) {
-        LOG_FATAL("Deconstruct EventLoop({:p}) while is loopping",
+    if(isLooping_) {
+        LOG_FATAL("Deconstruct EventLoop({:p}) while is looping",
                     static_cast<void*>(t_evtlpInCurThread));
     }
     t_evtlpInCurThread = nullptr;
-    wakeupEvent_.disableAll();
+    removeEvent(wakeupEvent_);
 }
 
 void EventLoop::loop() {
@@ -82,7 +82,7 @@ void EventLoop::loop() {
         LOG_FATAL("Try to do loop({:p}) in another thread", static_cast<void*>(this));
     }
     stop_ = false;
-    isLoopping_ = true;
+    isLooping_ = true;
     LOG_DEBUG("EventLoop({:p}) start looping", static_cast<void*>(this));
     while(!stop_) {
         activeEvents_.clear();
@@ -108,7 +108,7 @@ void EventLoop::loop() {
         }
     }
     LOG_DEBUG("EventLoop({:p}) stop looping", static_cast<void*>(this));
-    isLoopping_ = false;
+    isLooping_ = false;
 }
 void EventLoop::stop() { stop_ = true; wakeup(); }
 Timestamp EventLoop::lastPollTime() {
@@ -120,11 +120,11 @@ Timestamp EventLoop::lastPollTime() {
 Timer::ID EventLoop::runAt(Timestamp timePoint, Timer::Callback callback) {
     return timerQueue_->addTimer(callback, timePoint, 0.0);
 }
-Timer::ID EventLoop::runAfter(double time, Timer::Callback callback) {
-    return timerQueue_->addTimer(callback, Timestamp::now() + time, 0.0);
+Timer::ID EventLoop::runAfter(double delay, Timer::Callback callback) {
+    return timerQueue_->addTimer(callback, Timestamp::now() + delay, 0.0);
 }
-Timer::ID EventLoop::runEvery(double time, Timer::Callback callback) {
-    return timerQueue_->addTimer(callback, Timestamp::now(), time);
+Timer::ID EventLoop::runEvery(double interval, Timer::Callback callback) {
+    return timerQueue_->addTimer(callback, Timestamp::now(), interval);
 }
 void EventLoop::cancelTimer(Timer::ID id) {
     timerQueue_->cancel(id);
@@ -161,11 +161,18 @@ void EventLoop::updateEvent(Event& event) {
     }
     poller_->updateEvent(event);
 }
+void EventLoop::removeEvent(Event& event) {
+    if(event.ownerLoop() != this) {
+        LOG_FATAL("Event({}) doesn't belong to loop({:p})",
+            event.fd(), static_cast<void*>(this));
+    }
+    poller_->removeEvent(event);
+}
 
 bool EventLoop::isInLoopThread() const {
     return tid_ == std::this_thread::get_id();
 }
-bool EventLoop::isLoopping() const { return isLoopping_; }
+bool EventLoop::isLooping() const { return isLooping_; }
 int EventLoop::numOfEvents() { numOfEvents_ = activeEvents_.size(); return numOfEvents_; }
 
 std::string EventLoop::tidToStr() const {

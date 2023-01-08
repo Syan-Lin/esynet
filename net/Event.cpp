@@ -11,6 +11,9 @@ Event::Event(EventLoop& loop, int fd)
           happenedEvents_(0), indexInPoll_(-1) {}
 
 void Event::handle() {
+    if(happenedEvents_ & kCloseEvent) {
+        if(closeCallback_) closeCallback_();
+    }
     if(happenedEvents_ & kReadEvent) {
         if(readCallback_) readCallback_();
     }
@@ -22,6 +25,9 @@ void Event::handle() {
     }
 }
 
+void Event::setCloseCallback(Callback callback) {
+    closeCallback_ = callback;
+}
 void Event::setReadCallback(Callback callback) {
     readCallback_ = callback;
 }

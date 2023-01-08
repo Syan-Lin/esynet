@@ -20,7 +20,7 @@ public:
     EventLoopThreadPoll(EventLoop&);
     ~EventLoopThreadPoll();
 
-    void start(size_t);
+    void start(size_t numOfThreads);
     void stop();
 
     EventLoop* getNext();       /* 按顺序获取下一个 */

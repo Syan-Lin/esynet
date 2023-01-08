@@ -53,10 +53,11 @@ public:
 
     Timestamp lastPollTime();
     void updateEvent(Event&);   /* 非线程安全 */
+    void removeEvent(Event&);   /* 非线程安全 */
 
-    Timer::ID runAt(Timestamp, Timer::Callback);
-    Timer::ID runAfter(double, Timer::Callback);
-    Timer::ID runEvery(double, Timer::Callback);
+    Timer::ID runAt(Timestamp timePoint, Timer::Callback);
+    Timer::ID runAfter(double delay, Timer::Callback);
+    Timer::ID runEvery(double interval, Timer::Callback);
     void cancelTimer(Timer::ID);
 
     /* 由该EventLoop所属的线程来调用传入函数 */
@@ -64,7 +65,7 @@ public:
     void queueInLoop(Function);     /* 等待唤醒，稍后执行 */
 
     bool isInLoopThread() const;
-    bool isLoopping() const;
+    bool isLooping() const;
     int numOfEvents();
 
 private:
@@ -76,7 +77,7 @@ private:
     /* 状态相关 */
     Timestamp lastPollTime_;
     std::atomic<bool> stop_;
-    std::atomic<bool> isLoopping_;
+    std::atomic<bool> isLooping_;
     std::atomic<int> numOfEvents_;
     const std::thread::id tid_;
 

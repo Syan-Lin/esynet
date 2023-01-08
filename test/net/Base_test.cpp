@@ -2,6 +2,7 @@
 #define DOCTEST_CONFIG_COLORS_ANSI
 #include <doctest/doctest.h>
 #include <thread>
+#include <sys/stat.h>
 #include "net/base/Socket.h"
 #include "net/base/InetAddress.h"
 
@@ -51,4 +52,18 @@ TEST_CASE("Socket_Test"){
     CHECK(peerAddr.port() == 8888);
 
     client.join();
+    int temp;
+    struct stat s;
+    {
+        Socket s1;
+        temp = s1.fd();
+        CHECK(fstat(s1.fd(), &s) != -1);
+
+        Socket s2 = s1;
+        Socket s3 = std::move(s2);
+        Socket s4(s1);
+        Socket s5(std::move(s1));
+        CHECK(fstat(s5.fd(), &s) != -1);
+    }
+    CHECK(fstat(temp, &s) == -1);
 }
