@@ -3,7 +3,7 @@
 #include <doctest/doctest.h>
 #include <functional>
 #include "net/timer/TimerQueue.h"
-#include "net/EventLoop.h"
+#include "net/Reactor.h"
 
 using namespace esynet;
 using namespace esynet::timer;
@@ -20,7 +20,7 @@ void callonce() {
     g_test++;
 }
 
-void callback(EventLoop& loop, int id, TimerQueue& tq) {
+void callback(Reactor& loop, int id, TimerQueue& tq) {
     int64_t duration = g_record.microSecondsSinceEpoch();
     g_record = Timestamp::now();
     duration = g_record.microSecondsSinceEpoch() - duration;
@@ -35,7 +35,7 @@ void callback(EventLoop& loop, int id, TimerQueue& tq) {
 }
 
 TEST_CASE("TimerQueue_Test"){
-    EventLoop loop;
+    Reactor loop;
     TimerQueue tq(loop);
 
     Timestamp t1 = Timestamp::now();
@@ -47,7 +47,7 @@ TEST_CASE("TimerQueue_Test"){
     tq.addTimer(std::bind(callback, std::ref(loop), id, std::ref(tq)), Timestamp::now() + 1000, 1000);
 
     g_record = Timestamp::now();
-    loop.loop();
+    loop.start();
 
     Timestamp t2 = Timestamp::now();
     int duration = t2.microSecondsSinceEpoch() - t1.microSecondsSinceEpoch();

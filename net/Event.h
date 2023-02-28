@@ -11,14 +11,14 @@
 
 namespace esynet {
 
-class EventLoop;
+class Reactor;
 
 class Event : public utils::NonCopyable {
 public:
     using Callback = std::function<void()>;
 
 public:
-    Event(EventLoop&, int);
+    Event(Reactor&, int);
 
     void handle();
     void setCloseCallback(Callback);
@@ -43,7 +43,7 @@ public:
     int index() const;
     void setIndex(int);
 
-    EventLoop* ownerLoop() const;
+    Reactor* owner() const;
 
 private:
     /* EPOLLIN 等宏定义应该与 POLLIN 等宏定义一致 */
@@ -58,7 +58,7 @@ private:
 private:
     void update();
 
-    EventLoop& loop_;
+    Reactor& reactor_;
     const int fd_;
     short listenedEvents_;
     short happenedEvents_;

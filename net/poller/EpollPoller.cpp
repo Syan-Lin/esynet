@@ -4,18 +4,19 @@
 #include "logger/Logger.h"
 #include "net/Event.h"
 #include "utils/Timestamp.h"
+#include "utils/ErrorInfo.h"
 
 using esynet::poller::EpollPoller;
 using esynet::utils::Timestamp;
 
 const int EpollPoller::kInitEventListSize = 16;
 
-EpollPoller::EpollPoller(EventLoop& loop)
-    : Poller(loop),
+EpollPoller::EpollPoller(Reactor& reactor)
+    : Poller(reactor),
       epollFd_(epoll_create1(EPOLL_CLOEXEC)),
       epollEvents_(kInitEventListSize) {
     if(epollFd_ < 0) {
-        LOG_FATAL("epoll_create1 error");
+        LOG_FATAL("epoll_create1 error(err: {})", errnoStr(errno));
     }
 }
 
@@ -30,7 +31,7 @@ Timestamp EpollPoller::poll(EventList& activeEvents, int timeoutMs) {
     } else if(numEvents == 0) {
         LOG_DEBUG("Nothing happened");
     } else {
-        LOG_ERROR("epoll_wait error: {}", strerror(errno));
+        LOG_ERROR("epoll_wait error: {}", errnoStr(errno));
     }
     return pollTime;
 }
@@ -61,7 +62,6 @@ void EpollPoller::updateEvent(Event& event) {
 }
 
 void EpollPoller::removeEvent(Event& event) {
-    LOG_DEBUG("Remove event(fd: {})", event.fd());
     epollUpdate(EPOLL_CTL_DEL, event);
 
     events_.erase(event.fd());
@@ -86,7 +86,7 @@ void EpollPoller::epollUpdate(int operation, Event& event) {
     epollEvent.data.fd = event.fd();
     if(epoll_ctl(epollFd_, operation, event.fd(), &epollEvent) < 0) {
         LOG_ERROR("epoll_ctl(op: {}, fd: {}, errno: {}) error",
-                    operation, event.fd(), strerror(errno));
+                    operation, event.fd(), errnoStr(errno));
         event.setHappenedEvent(errno);
         event.handle();
     }

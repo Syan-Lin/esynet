@@ -3,12 +3,12 @@
 #include <doctest/doctest.h>
 #include <functional>
 #include <sys/timerfd.h>
-#include "net/EventLoop.h"
+#include "net/Reactor.h"
 #include "net/Event.h"
 
 using namespace esynet;
 
-/* 使用 timefd 来测试 EventLoop 及其相关类 */
+/* 使用 time_fd 来测试 Reactor 及其相关类 */
 
 std::string gStrForTest;
 
@@ -27,14 +27,14 @@ void errorCallBack(Event& event) {
     event.disableAll();
     event.disableAll();
 }
-void stopLoop(EventLoop& loop) {
+void stopLoop(Reactor& loop) {
     loop.stop();
 }
 
 TEST_CASE("EventLoop_Test"){
     SUBCASE("PollPoller") {
         gStrForTest.clear();
-        EventLoop loop(false);
+        Reactor loop(false);
 
         /* 用于关闭loop */
         int close_fd = timerfd_create(CLOCK_MONOTONIC, TFD_NONBLOCK | TFD_CLOEXEC);
@@ -74,14 +74,14 @@ TEST_CASE("EventLoop_Test"){
         errorEvent.setErrorCallback(std::bind(errorCallBack, std::ref(errorEvent)));
         errorEvent.enableReading();
 
-        loop.loop();
+        loop.start();
         close(timer_fd);
         CHECK(gStrForTest == "rwe");
     }
 
     SUBCASE("EpollPoller") {
         gStrForTest.clear();
-        EventLoop loop;
+        Reactor loop;
 
         /* 用于关闭loop */
         int close_fd = timerfd_create(CLOCK_MONOTONIC, TFD_NONBLOCK | TFD_CLOEXEC);
@@ -119,7 +119,7 @@ TEST_CASE("EventLoop_Test"){
         errorEvent.setErrorCallback(std::bind(errorCallBack, std::ref(errorEvent)));
         errorEvent.enableReading();
 
-        loop.loop();
+        loop.start();
         close(timer_fd);
         CHECK(gStrForTest == "ewr");
     }

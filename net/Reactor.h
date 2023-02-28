@@ -18,20 +18,20 @@ namespace esynet {
 
 class Event;
 
-/* EventLoop 管理一个 Poller 以及数个 Event
- * Poller 以及 Event 都和所属的 EventLoop
- * 在同一个线程。同时每个线程最多拥有一个 EventLoop
+/* Reactor 管理一个 Poller 以及数个 Event
+ * Poller 以及 Event 都和所属的 Reactor
+ * 在同一个线程。同时每个线程最多拥有一个 Reactor
  * 所以这些类都不必是线程安全的，不会发生跨线程调用
  *
- * EventLoop 大部分函数都是线程安全的，非线程安全会
+ * Reactor 大部分函数都是线程安全的，非线程安全会
  * 特殊标注
  *
  * 注意：不要设为全局变量 */
 
-class EventLoop : public utils::NonCopyable {
+class Reactor : public utils::NonCopyable {
 public:
-    static EventLoop* getEvtlpOfCurThread();
-    static int kPollTimeMs;
+    static Reactor* getReactorOfCurThread();
+    static const int kPollTimeMs;
 
 private:
     using EventList = std::vector<Event*>;
@@ -45,10 +45,10 @@ private:
     void wakeup();
 
 public:
-    EventLoop(bool = true);
-    ~EventLoop();
+    Reactor(bool = true);
+    ~Reactor();
 
-    void loop();    /* 不允许跨线程调用 */
+    void start();    /* 不允许跨线程调用 */
     void stop();
 
     Timestamp lastPollTime();
@@ -60,7 +60,7 @@ public:
     Timer::ID runEvery(double interval, Timer::Callback);
     void cancelTimer(Timer::ID);
 
-    /* 由该EventLoop所属的线程来调用传入函数 */
+    /* 由该Reactor所属的线程来调用传入函数 */
     void run(Function);       /* 立刻唤醒执行 */
     void queue(Function);     /* 等待唤醒，稍后执行 */
 

@@ -4,6 +4,7 @@
 #include "logger/Logger.h"
 #include "utils/Buffer.h"
 #include "net/base/Socket.h"
+#include "utils/ErrorInfo.h"
 
 using esynet::InetAddress;
 
@@ -24,7 +25,7 @@ std::optional<InetAddress> InetAddress::resolve(utils::StringArg hostname) {
         inetAddr.setSockAddr(*reinterpret_cast<SockAddr*>(&addr));
         return inetAddr;
     } else {
-        LOG_ERROR("gethostbyname_r error(hostname: {}, err: {})", hostname.c_str(), hstrerror(err));
+        LOG_ERROR("gethostbyname_r error(hostname: {}, err: {})", hostname.c_str(), errnoStr(err));
     }
     return std::nullopt;
 }
@@ -36,7 +37,9 @@ std::optional<InetAddress> InetAddress::getLocalAddr(Socket socket) {
         inetAddr.setSockAddr(*reinterpret_cast<SockAddr*>(&addr));
         return inetAddr;
     } else {
-        LOG_ERROR("getsockname error");
+        char error_info[16];
+        strerror_r(errno, error_info, sizeof error_info);
+        LOG_ERROR("getsockname error(fd: {}, err: {})", socket.fd(), error_info);
     }
     return std::nullopt;
 }
@@ -48,7 +51,7 @@ std::optional<InetAddress> InetAddress::getPeerAddr(Socket socket) {
         inetAddr.setSockAddr(*reinterpret_cast<SockAddr*>(&addr));
         return inetAddr;
     } else {
-        LOG_ERROR("getpeername error");
+        LOG_ERROR("getpeername error(fd: {}, err: {})", socket.fd(), errnoStr(errno));
     }
     return std::nullopt;
 }

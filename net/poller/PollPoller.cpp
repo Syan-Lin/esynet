@@ -3,11 +3,12 @@
 /* Local headers */
 #include "logger/Logger.h"
 #include "net/Event.h"
+#include "utils/ErrorInfo.h"
 
 using esynet::poller::PollPoller;
 using esynet::utils::Timestamp;
 
-PollPoller::PollPoller(EventLoop& loop) : Poller(loop) {}
+PollPoller::PollPoller(Reactor& reactor) : Poller(reactor) {}
 
 Timestamp PollPoller::poll(EventList& activeEvents, int timeoutMs) {
     int numEvents = ::poll(&*pollFds_.begin(), pollFds_.size(), timeoutMs);
@@ -18,7 +19,7 @@ Timestamp PollPoller::poll(EventList& activeEvents, int timeoutMs) {
     } else if(numEvents == 0) {
         LOG_DEBUG("Nothing happened");
     } else {
-        LOG_ERROR("poll error: {}", strerror(errno));
+        LOG_ERROR("poll error: {}", errnoStr(errno));
     }
     return pollTime;
 }
@@ -56,7 +57,6 @@ void PollPoller::updateEvent(Event& event) {
 }
 
 void PollPoller::removeEvent(Event& event) {
-    LOG_DEBUG("Remove event(fd: {})", event.fd());
     events_.erase(event.fd());
     int index = event.index();
     if(index >= pollFds_.size() || index < 0) {

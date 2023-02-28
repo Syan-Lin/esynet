@@ -1,34 +1,33 @@
 #include "net/TcpServer.h"
-#include "net/Event.h"
-#include <functional>
 
 /* Local headers */
-
-/* Linux headers */
+#include "net/Reactor.h"
+#include "net/Event.h"
 
 /* Standard headers */
+#include <functional>
 
-using esynet::EventLoop;
+using esynet::Reactor;
 using esynet::TcpServer;
-using esynet::EventLoopThreadPoll;
+using esynet::ReactorThreadPoll;
 
-TcpServer::TcpServer(EventLoop& loop, InetAddress addr, utils::StringPiece name):
-        loop_(loop),
+TcpServer::TcpServer(Reactor& reactor, InetAddress addr, utils::StringPiece name):
+        reactor_(reactor),
         port_(addr.port()),
         ip_(addr.ip()),
         name_(name.asString()),
-        acceptor_(loop, addr),
-        threadPoll_(loop),
+        acceptor_(reactor, addr),
+        threadPoll_(reactor),
         started_(false) {
     connectionCb_ = TcpConnection::defaultConnectionCallback;
     messageCb_ = TcpConnection::defaultMessageCallback;
     acceptor_.setConnectionCallback(std::bind(
-        &TcpServer::OnConnection, this,std::placeholders::_1, std::placeholders::_2));
+        &TcpServer::OnConnection, this, std::placeholders::_1, std::placeholders::_2));
 }
 
 TcpServer::~TcpServer() {
     for(auto& iter : connections_) {
-        iter.second->getLoop().run([iter] {
+        iter.second->reactor().run([&iter] {
             iter.second->connectDestroyed();
         });
     }
@@ -36,13 +35,13 @@ TcpServer::~TcpServer() {
 }
 
 void TcpServer::start() {
-    if(!loop_.isInLoopThread()) {
-        LOG_FATAL("Try start TcpServer in another thread(loop: {:p})",
-                    static_cast<void*>(&loop_));
+    if(!reactor_.isInLoopThread()) {
+        LOG_FATAL("Try start TcpServer in another thread(reactor: {:p})",
+                    static_cast<void*>(&reactor_));
     }
     if(!started_) {
         threadPoll_.start();
-        loop_.run([this] {
+        reactor_.run([this] {
             this->acceptor_.listen();
         });
     }
@@ -52,7 +51,7 @@ void TcpServer::start() {
 const std::string&  TcpServer::ip() const   { return ip_; }
 const std::string&  TcpServer::name() const { return name_; }
 int                 TcpServer::port() const { return port_; }
-EventLoop&          TcpServer::getLoop()    { return loop_; }
+Reactor&          TcpServer::reactor()    { return reactor_; }
 
 void TcpServer::setConnectionCallback(const ConnectionCallback& cb) {
     connectionCb_ = cb;
@@ -70,42 +69,43 @@ void TcpServer::setThreadNumInPool(size_t numThreads) {
     threadPoll_.setThreadNum(numThreads);
 }
 
-EventLoopThreadPoll& TcpServer::threadPoll() {
+ReactorThreadPoll& TcpServer::threadPoll() {
     return threadPoll_;
 }
 void TcpServer::setThreadPollStrategy(Strategy strategy) {
     strategy_ = strategy;
 }
 
-void TcpServer::OnConnection(Socket sock, const InetAddress& peerAddr) {
-    if(!loop_.isInLoopThread()) {
-        LOG_FATAL("TcpServer OnConnection in another thread(loop: {:p})",
-                    static_cast<void*>(&loop_));
+void TcpServer::OnConnection(Socket socket, const InetAddress& peerAddr) {
+    if(!reactor_.isInLoopThread()) {
+        LOG_FATAL("TcpServer OnConnection in another thread(reactor: {:p})",
+                    static_cast<void*>(&reactor_));
     }
-    EventLoop* loop;
+    Reactor* reactor;
     if(strategy_ == kLightest) {
-        loop = threadPoll_.getLightest();
+        reactor = threadPoll_.getLightest();
     } else {
-        loop = threadPoll_.getNext();
+        reactor = threadPoll_.getNext();
     }
-    LOG_INFO("TcpServer::OnConnection new connection from {}", peerAddr.ip());
+    std::string connName = name_ + "-" + peerAddr.ip() + ":" + std::to_string(peerAddr.port());
 
-    auto localAddr = InetAddress::getLocalAddr(sock);
-    TcpConnectionPtr conn = std::make_shared<TcpConnection>( // TODO: 修改
-                                *loop, std::move(sock), localAddr, peerAddr);
+    auto localAddr = InetAddress::getLocalAddr(socket);
+    TcpConnectionPtr conn = std::make_shared<TcpConnection>(
+                                *reactor, connName, socket, localAddr, peerAddr);
     connections_[conn->name()] = conn;
     conn->setConnectionCallback(connectionCb_);
     conn->setMessageCallback(messageCb_);
     conn->setWriteCompleteCallback(writeCompleteCb_);
     conn->setCloseCallback(std::bind(&TcpServer::removeConnection, this, std::placeholders::_1));
-    loop->run([conn] {
+    reactor->run([conn] {
         conn->connectEstablished();
     });
 }
 
-void TcpServer::removeConnection(const TcpConnection& conn) {
-    LOG_INFO("TcpServer::removeConnection {}", conn.peerAddress().ip());
+void TcpServer::removeConnection(TcpConnection& conn) {
     connections_.erase(conn.name());
-    EventLoop& ioLoop = conn.getLoop();
-    ioLoop.run(std::bind(&TcpConnection::connectDestroyed, conn));
+    Reactor& ioReactor = conn.reactor();
+    ioReactor.run([&conn] {
+        conn.connectDestroyed();
+    });
 }

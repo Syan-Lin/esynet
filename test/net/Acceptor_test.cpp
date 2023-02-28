@@ -4,17 +4,17 @@
 #include <doctest/doctest.h>
 #include <functional>
 #include <sys/timerfd.h>
-#include "net/EventLoop.h"
+#include "net/Reactor.h"
 #include "net/base/Acceptor.h"
 #include "logger/Logger.h"
 
 using namespace esynet;
 
 TEST_CASE("Acceptor_Test"){
-    EventLoop loop;
+    Reactor reactor;
     InetAddress listenAddr(8888);
 
-    Acceptor acceptor(loop, listenAddr);
+    Acceptor acceptor(reactor, listenAddr);
     acceptor.setConnectionCallback([](Socket connSock, const InetAddress& peerAddr){
         LOG_INFO("New connection from {}", peerAddr.ip());
         /* 可以省去，Socket保证会自动close，但可能延迟
@@ -23,5 +23,5 @@ TEST_CASE("Acceptor_Test"){
     });
     acceptor.listen();
 
-    loop.loop();
+    reactor.start();
 }

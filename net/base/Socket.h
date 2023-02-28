@@ -9,11 +9,9 @@
 /* Linux headers */
 #include <netinet/tcp.h>
 
-/* Local headers */
-#include "utils/NonCopyable.h"
-#include "net/base/InetAddress.h"
-
 namespace esynet {
+
+class InetAddress;
 
 /* Socket可以任意复制，当所有副本都销毁时才会close */
 class Socket {

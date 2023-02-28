@@ -10,7 +10,7 @@ namespace esynet::poller {
 
 class PollPoller : public Poller {
 public:
-    PollPoller(EventLoop& loop);
+    PollPoller(Reactor& reactor);
     ~PollPoller() override = default;
 
     utils::Timestamp poll(EventList&, int timeoutMs) override;
@@ -19,11 +19,10 @@ public:
 
 private:
     using PollFd = struct pollfd;
-    using PollFdList = std::vector<PollFd>;
 
 private:
     void fillActiveEvents(int numEvents, EventList&) const;
-    PollFdList pollFds_;
+    std::vector<PollFd> pollFds_;
 };
 
 } /* namespace esynet::poller */

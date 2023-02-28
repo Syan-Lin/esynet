@@ -1,13 +1,13 @@
 #include "net/Event.h"
 
 /* Local headers */
-#include "net/EventLoop.h"
+#include "net/Reactor.h"
 
 using esynet::Event;
-using esynet::EventLoop;
+using esynet::Reactor;
 
-Event::Event(EventLoop& loop, int fd)
-        : loop_(loop), fd_(fd), listenedEvents_(-1),
+Event::Event(Reactor& loop, int fd)
+        : reactor_(loop), fd_(fd), listenedEvents_(-1),
           happenedEvents_(0), indexInPoll_(-1) {}
 
 void Event::handle() {
@@ -71,8 +71,8 @@ void Event::disableAll() {
 
 int Event::index() const { return indexInPoll_; }
 void Event::setIndex(int index) { indexInPoll_ = index; }
-EventLoop* Event::ownerLoop() const { return &loop_; }
+Reactor* Event::owner() const { return &reactor_; }
 
 void Event::update() {
-    loop_.updateEvent(*this);
+    reactor_.updateEvent(*this);
 }

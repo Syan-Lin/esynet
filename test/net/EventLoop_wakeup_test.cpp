@@ -3,7 +3,7 @@
 #include <doctest/doctest.h>
 #include <functional>
 #include <sys/timerfd.h>
-#include "net/EventLoop.h"
+#include "net/Reactor.h"
 #include "net/Event.h"
 
 using namespace esynet;
@@ -11,7 +11,7 @@ using namespace esynet::utils;
 
 int global = 0;
 
-void test(EventLoop& loop) {
+void test(Reactor& loop) {
     std::this_thread::sleep_for(std::chrono::milliseconds(3500));
     loop.run([&loop] {
         global++;
@@ -20,11 +20,11 @@ void test(EventLoop& loop) {
 }
 
 TEST_CASE("EventLoop_wakeup_Test"){
-    EventLoop loop;
+    Reactor loop;
     std::thread t(test, std::ref(loop));
 
     Timestamp t1 = Timestamp::now();
-    loop.loop();
+    loop.start();
     Timestamp t2 = Timestamp::now();
     CHECK(t2 - t1 >= 3500);
 

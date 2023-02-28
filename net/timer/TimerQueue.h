@@ -20,14 +20,14 @@ public:
     using TimerPositionMap = std::map<Timer::ID, Timestamp>;
 
 public:
-    TimerQueue(EventLoop&);
+    TimerQueue(Reactor&);
     ~TimerQueue();
 
     /* 线程安全 */
     Timer::ID addTimer(Timer::Callback, Timestamp expiration, double interval);
     void cancel(Timer::ID);
 
-    /* 由EventLoop调用 */
+    /* 由Reactor调用 */
     void handle();
 
 private:
@@ -39,7 +39,7 @@ private:
     TimerMap timerMap_;
     TimerPositionMap timerPositionMap_; /* 记录Timer在timerMap_中的位置用于取消 */
     int timerFd_;
-    EventLoop& loop_;
+    Reactor& reactor_;
     Event timerEvent_;
 };
 

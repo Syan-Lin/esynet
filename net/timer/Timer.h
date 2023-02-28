@@ -2,7 +2,7 @@
 
 /* Standard headers */
 #include <functional>
-#include <thread>
+#include <atomic>
 
 /* Local headers */
 #include "utils/Timestamp.h"

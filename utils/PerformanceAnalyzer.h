@@ -10,7 +10,7 @@
 namespace esynet::utils {
 
 /* 非线程安全，频繁计时有一定的性能损失，每次调用约有 数十纳秒 的开销 */
-class TimeAnalyser {
+class TimeAnalyzer {
 public:
     using TimePoint = std::chrono::high_resolution_clock::time_point;
     using TimePointMap = std::map<const char*, TimePoint>;
@@ -43,8 +43,8 @@ public:
     }
 
 public:
-    TimeAnalyser() {
-        addToStat_ = std::bind(&TimeAnalyser::doNothing, this, std::placeholders::_1, std::placeholders::_2);
+    TimeAnalyzer() {
+        addToStat_ = std::bind(&TimeAnalyzer::doNothing, this, std::placeholders::_1, std::placeholders::_2);
     }
     void start(const char* name) {
         timePointMap_[name] = now();
@@ -92,7 +92,7 @@ private:
 
 class TimeStatistics {
 public:
-    using TimeMap = TimeAnalyser::TimeMap;
+    using TimeMap = TimeAnalyzer::TimeMap;
 
 public:
     void stat(const char* name, int64_t time) {
@@ -102,10 +102,10 @@ public:
         tm_[name] += time;
     }
     TimeMap& getMap() { return tm_; }
-    std::string toString(TimeAnalyser::Unit unit = TimeAnalyser::MILLISECONDS) {
+    std::string toString(TimeAnalyzer::Unit unit = TimeAnalyzer::MILLISECONDS) {
         std::string result;
         for(auto& [name, time] : tm_) {
-            result += fmt::format("id: {:s}, time: {:s}\n", name, TimeAnalyser::toString(time, unit));
+            result += fmt::format("id: {:s}, time: {:s}\n", name, TimeAnalyzer::toString(time, unit));
         }
         return result;
     }
@@ -115,7 +115,7 @@ private:
 };
 
 /* TODO: 内存分析 */
-class MemoryAnalyser {
+class MemoryAnalyzer {
 
 };
 

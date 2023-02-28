@@ -6,16 +6,19 @@
 
 /* Local headers */
 #include "net/Event.h"
-#include "net/EventLoop.h"
 #include "net/base/Socket.h"
 #include "utils/Buffer.h"
 #include "utils/NonCopyable.h"
 #include "utils/StringPiece.h"
 #include "utils/Timestamp.h"
+#include "net/base/InetAddress.h"
 
 namespace esynet {
 
-/* 线程安全 */
+class Reactor;
+
+/* 该类是直接和业务代码接触的类，很大可能发生跨线程调用
+ * 所以该类中的大部分操作都委托给Reactor */
 class TcpConnection : utils::NonCopyable {
 private:
     using TcpInfo = Socket::TcpInfo;
@@ -23,22 +26,19 @@ private:
 
 public:
     using TcpConnectionPtr = std::shared_ptr<TcpConnection>;
-    using ConnectionCallback = std::function<void(const TcpConnection&)>;
+    using ConnectionCallback = std::function<void(TcpConnection&)>;
     using CloseCallback = ConnectionCallback;
     using WriteCompleteCallback = ConnectionCallback;
-    using MessageCallback = std::function<void(const TcpConnection&, utils::Buffer&, utils::Timestamp)>;
-    using HighWaterMarkCallback = std::function<void(const TcpConnection&, size_t)>;
+    using MessageCallback = std::function<void(TcpConnection&, utils::Buffer&, utils::Timestamp)>;
+    using HighWaterMarkCallback = std::function<void(TcpConnection&, size_t)>;
 
 public:
-    static void defaultConnectionCallback(const TcpConnection&);
-    static void defaultMessageCallback(const TcpConnection&, utils::Buffer&, utils::Timestamp);
+    static void defaultConnectionCallback(TcpConnection&);
+    static void defaultMessageCallback(TcpConnection&, utils::Buffer&, utils::Timestamp);
 
 public:
-    TcpConnection(EventLoop& loop,
-                utils::StringPiece name,
-                Socket sockfd,
-                const InetAddress& localAddr,
-                const InetAddress& peerAddr);
+    TcpConnection(Reactor&, utils::StringPiece, Socket,
+                    const InetAddress&, const InetAddress&);
     ~TcpConnection();
 
     /* 状态相关 */
@@ -47,13 +47,13 @@ public:
     const InetAddress&  peerAddress()   const;
     bool                connected()     const;
     bool                disconnected()  const;
-    TcpInfo             getTcpInfo()    const;
-    std::string         getTcpInfoString() const;
-    EventLoop&          getLoop() const;
+    TcpInfo             tcpInfo()    const;
+    std::string         tcpInfoStr() const;
+    Reactor&            reactor() const;
 
     /* 操作 */
     void send(const void*, size_t);
-    void send(const utils::StringPiece&);
+    void send(const utils::StringPiece);
     void shutdown(); // NOT thread safe
     void close();
     void setTcpNoDelay(bool);
@@ -86,7 +86,7 @@ private:
     std::string stateToString() const;
 
 private:
-    EventLoop& loop_;
+    Reactor& reactor_;
     const std::string name_;
 
     Socket socket_;

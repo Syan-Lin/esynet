@@ -4,8 +4,9 @@
 #include <sys/timerfd.h>
 
 /* Local headers */
-#include "net/EventLoop.h"
+#include "net/Reactor.h"
 #include "logger/Logger.h"
+#include "utils/ErrorInfo.h"
 
 using esynet::timer::TimerQueue;
 using esynet::timer::Timer;
@@ -13,13 +14,12 @@ using esynet::timer::Timer;
 int TimerQueue::createTimerFd() {
     int timerfd = timerfd_create(CLOCK_REALTIME, TFD_NONBLOCK | TFD_CLOEXEC);
     if(timerfd < 0) {
-        LOG_ERROR("Failed to create timerfd({})", strerror(errno));
-        abort();
+        LOG_ERROR("Failed to create timerfd(err: {})", errnoStr(errno));
     }
     return timerfd;
 }
 
-/* 监听超时时间更新为最近的超时时间 */
+/* 将超时时间更新为最近的超时时间 */
 void TimerQueue::updateTimerFd() {
     struct itimerspec closeTime;
     bzero(&closeTime, sizeof closeTime);
@@ -31,17 +31,19 @@ void TimerQueue::updateTimerFd() {
     }
     int ret = timerfd_settime(timerFd_, TFD_TIMER_ABSTIME, &closeTime, nullptr);
     if(ret) {
-        LOG_ERROR("Failed to set timerfd({})", strerror(errno));
+        LOG_ERROR("Failed to set timerfd(err: {})", errnoStr(errno));
     }
 }
 
-TimerQueue::TimerQueue(EventLoop& loop)
-        : loop_(loop), timerFd_(createTimerFd()), timerEvent_(loop, timerFd_) {
+TimerQueue::TimerQueue(Reactor& reactor)
+        : reactor_(reactor)
+        , timerFd_(createTimerFd())
+        , timerEvent_(reactor, timerFd_) {
     timerEvent_.setReadCallback(std::bind(&TimerQueue::handle, this));
     timerEvent_.enableReading();
 }
 TimerQueue::~TimerQueue() {
-    loop_.removeEvent(timerEvent_);
+    reactor_.removeEvent(timerEvent_);
     close(timerFd_);
 }
 
@@ -49,8 +51,8 @@ Timer::ID TimerQueue::addTimer(Timer::Callback callback, Timestamp expiration, d
     TimerPtr tp = std::make_unique<Timer>(callback, expiration, interval);
     Timer::ID id = tp->id();
 
-    /* 需要保证线程安全的部分 */
-    loop_.run([this, expiration, &tp] {
+    reactor_.run([this, expiration, &tp] {
+        /* 需要保证线程安全的部分 */
         timerMap_[expiration] = std::move(tp);
         timerPositionMap_[timerMap_[expiration]->id()] = expiration;
         updateTimerFd();
@@ -59,8 +61,8 @@ Timer::ID TimerQueue::addTimer(Timer::Callback callback, Timestamp expiration, d
     return id;
 }
 void TimerQueue::cancel(Timer::ID id) {
-    /* 需要保证线程安全的部分 */
-    loop_.run([this, id] {
+    reactor_.run([this, id] {
+        /* 需要保证线程安全的部分 */
         auto iter = timerPositionMap_.find(id);
         if(iter != timerPositionMap_.end()) {
             timerMap_.erase(iter->second);

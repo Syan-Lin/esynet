@@ -12,7 +12,7 @@ class EpollPoller : public Poller {
 public:
     static const int kInitEventListSize;
 public:
-    EpollPoller(EventLoop&);
+    EpollPoller(Reactor&);
     ~EpollPoller() override;
 
     utils::Timestamp poll(EventList&, int timeoutMs) override;
@@ -21,12 +21,11 @@ public:
 
 private:
     using EpollEvent = struct epoll_event;
-    using EpollEventList = std::vector<EpollEvent>;
 
 private:
     void epollUpdate(int operation, Event&);
     void fillActiveEvents(int numEvents, EventList&) const;
-    EpollEventList epollEvents_;
+    std::vector<EpollEvent> epollEvents_;
     int epollFd_;
 };
 
