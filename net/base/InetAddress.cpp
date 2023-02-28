@@ -3,11 +3,11 @@
 /* Local headers */
 #include "logger/Logger.h"
 #include "utils/Buffer.h"
-#include <cstring>
+#include "net/base/Socket.h"
 
 using esynet::InetAddress;
 
-InetAddress InetAddress::resolve(utils::StringArg hostname) {
+std::optional<InetAddress> InetAddress::resolve(utils::StringArg hostname) {
     struct hostent queryResult;
     struct hostent* result = nullptr;
     int err = 0;
@@ -26,15 +26,39 @@ InetAddress InetAddress::resolve(utils::StringArg hostname) {
     } else {
         LOG_ERROR("gethostbyname_r error(hostname: {}, err: {})", hostname.c_str(), hstrerror(err));
     }
-    return InetAddress(-1);
+    return std::nullopt;
+}
+std::optional<InetAddress> InetAddress::getLocalAddr(Socket socket) {
+    InetAddress inetAddr;
+    SockAddrIn addr;
+    socklen_t len = sizeof addr;
+    if (getsockname(socket.fd(), reinterpret_cast<SockAddr*>(&addr), &len) == 0) {
+        inetAddr.setSockAddr(*reinterpret_cast<SockAddr*>(&addr));
+        return inetAddr;
+    } else {
+        LOG_ERROR("getsockname error");
+    }
+    return std::nullopt;
+}
+std::optional<InetAddress> InetAddress::getPeerAddr(Socket socket) {
+    InetAddress inetAddr;
+    SockAddrIn addr;
+    socklen_t len = sizeof addr;
+    if (getpeername(socket.fd(), reinterpret_cast<SockAddr*>(&addr), &len) == 0) {
+        inetAddr.setSockAddr(*reinterpret_cast<SockAddr*>(&addr));
+        return inetAddr;
+    } else {
+        LOG_ERROR("getpeername error");
+    }
+    return std::nullopt;
 }
 
-InetAddress::InetAddress(int port) {
+InetAddress::InetAddress(unsigned short port) {
     addr_.sin_family = AF_INET;
     addr_.sin_addr.s_addr = htonl(INADDR_ANY);
     addr_.sin_port = htons(port);
 }
-InetAddress::InetAddress(utils::StringArg ip, int port) {
+InetAddress::InetAddress(utils::StringArg ip, unsigned short port) {
     addr_.sin_family = AF_INET;
     addr_.sin_addr.s_addr = inet_addr(ip.c_str());
     addr_.sin_port = htons(port);

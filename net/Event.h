@@ -26,8 +26,10 @@ public:
     void setWriteCallback(Callback);
     void setErrorCallback(Callback);
 
-    short fd() const;
+    int fd() const;
     short listenedEvent() const;
+    bool writable() const;
+    bool readable() const;
     void setHappenedEvent(int event);
 
     /* 设置监听事件 */

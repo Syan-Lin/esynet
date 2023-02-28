@@ -3,6 +3,8 @@
 /* Standard headers */
 #include <string>
 #include <memory>
+#include <vector>
+#include <optional>
 
 /* Linux headers */
 #include <netinet/tcp.h>
@@ -31,8 +33,13 @@ public:
 
     void bind(const InetAddress&);
     void listen();
-    int accept(InetAddress&);
-    int accept();
+    // 立刻执行shutdown操作，但真正关闭会延迟到计数归零
+    void close();
+    /* 每次accept一个连接，适合长连接服务 */
+    std::optional<int> accept(InetAddress&);
+    std::optional<int> accept();
+    /* 每次accept若干个连接，适合短连接服务 */
+    std::vector<int> accept(std::vector<InetAddress>&);
     void connect(const InetAddress&);
 
     TcpInfo getTcpInfo() const;
@@ -45,6 +52,11 @@ public:
     void setReuseAddr(bool);
     void setReusePort(bool);
     void setKeepAlive(bool);
+
+    // 不建议直接使用以下接口，用于内部使用
+    size_t write(const void*, size_t);
+    size_t read(void*, size_t);
+    size_t readv(const struct iovec*, int);
 
 private:
     std::shared_ptr<const int> fd_;

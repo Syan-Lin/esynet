@@ -19,16 +19,17 @@ public:
 
     void setConnectionCallback(ConnectionCallback);
     bool listening();
-    void listen();
+    void listen();  /* 必须在loop thread调用 */
 
 private:
-    void OnConnection();
+    void OnConnection();    /* 必须在loop thread调用 */
 
     EventLoop& loop_;
     Socket acceptSocket_;
     Event acceptEvent_;
     ConnectionCallback connCb_;
     bool listen_;
+    int port_;
 };
 
 } /* namespace esynet */

@@ -1,11 +1,11 @@
 #pragma once
 
 /* Local headers */
+#include "net/base/Acceptor.h"
+#include "net/thread/EventLoopThreadPoll.h"
 #include "utils/NonCopyable.h"
-#include "utils/Buffer.h"
-#include "utils/Timestamp.h"
+#include "utils/StringPiece.h"
 #include "net/EventLoop.h"
-#include "net/Event.h"
 #include "net/TcpConnection.h"
 #include "net/base/Socket.h"
 
@@ -13,45 +13,60 @@ namespace esynet {
 
 class TcpServer : public utils::NonCopyable {
 private:
-    using TcpConnectionPtr = std::shared_ptr<TcpConnection>;
+    using TcpConnectionPtr = TcpConnection::TcpConnectionPtr;
     using ConnectionMap = std::map<std::string, TcpConnectionPtr>;
 
-    using ConnectionCallback = std::function<void(const TcpConnectionPtr&)>;
-    using CloseCallback = ConnectionCallback;
-    using WriteCompleteCallback = ConnectionCallback;
-    using MessageCallback = std::function<void(const TcpConnection&, utils::Buffer*, utils::Timestamp)>;
-    using HighWaterMarkCallback = std::function<void(const TcpConnectionPtr&, size_t)>;
+    using ConnectionCallback = TcpConnection::ConnectionCallback;
+    using WriteCompleteCallback = TcpConnection::WriteCompleteCallback;
+    using MessageCallback = TcpConnection::MessageCallback;
+    using ThreadInitCallback = std::function<void(EventLoop&)>;
 
 public:
-    TcpServer(EventLoop&);
+    enum Strategy { kRoundRobin, kLightest };
 
+public:
+    TcpServer(EventLoop&, InetAddress addr = 8080, utils::StringPiece name = "Server");
+    ~TcpServer();
+
+    const std::string&  ip() const;
+    const std::string&  name() const;
+    int                 port() const;
+    EventLoop&          getLoop();
+
+    /* 非线程安全 */
     void setConnectionCallback(const ConnectionCallback&);
     void setMessageCallback(const MessageCallback&);
     void setWriteCompleteCallback(const WriteCompleteCallback&);
-    void setHighWaterMarkCallback(const HighWaterMarkCallback&, size_t highWaterMark);
-    void setCloseCallback(const CloseCallback&);
+    void setThreadInitCallback(const ThreadInitCallback&);
+    void setThreadNumInPool(size_t numThreads = 0);
+
+    EventLoopThreadPoll& threadPoll();
+    void setThreadPollStrategy(Strategy strategy);
+
+    void start(); /* 线程安全，开始监听 */
 
 private:
+    /* 非线程安全 */
+    void OnConnection(Socket, const InetAddress&);
+    /* 线程安全 */
+    void removeConnection(const TcpConnection& conn);
+
     EventLoop& loop_;
-    // const std::string ip_;
-    // const int port_;
-    // const std::string name_;
+    const int port_;
+    const std::string ip_;
+    const std::string name_;
+    std::atomic<bool> started_;
 
-    // Socket socket_;
-    // State state_;
-    // const InetAddress localAddr_;
-    // const InetAddress peerAddr_;
+    Acceptor acceptor_;
+    EventLoopThreadPoll threadPoll_;
+    Strategy strategy_ = kRoundRobin;
 
-    // ConnectionCallback connectionCb_;
-    // CloseCallback closeCb_;
-    // WriteCompleteCallback writeCompleteCb_;
-    // MessageCallback messageCb_;
-    // HighWaterMarkCallback highWaterMarkCb_;
+    ConnectionCallback connectionCb_;
+    WriteCompleteCallback writeCompleteCb_;
+    MessageCallback messageCb_;
 
-    // size_t highWaterMark_;
-    // utils::Buffer inputBuffer_;
-    // utils::Buffer outputBuffer_;
-    // std::any context_;
+    int nextConnId_;
+    ConnectionMap connections_;
 };
 
 } /* namespace esynet */

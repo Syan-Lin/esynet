@@ -130,15 +130,15 @@ void EventLoop::cancelTimer(Timer::ID id) {
     timerQueue_->cancel(id);
 }
 
-void EventLoop::runInLoop(Function func) {
+void EventLoop::run(Function func) {
     if(isInLoopThread()) {
         func();
     } else {
-        queueInLoop(func);
+        queue(func);
         wakeup();
     }
 }
-void EventLoop::queueInLoop(Function func) {
+void EventLoop::queue(Function func) {
     {
         std::unique_lock<std::mutex> lock(mutex_);
         tasks_.push_back(func);

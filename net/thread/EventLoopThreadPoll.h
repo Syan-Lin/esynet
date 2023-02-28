@@ -14,13 +14,13 @@ namespace esynet {
 class EventLoopThreadPoll {
 private:
     using EventLoopPtr = std::unique_ptr<EventLoop>;
-    using InitCallback = std::function<void(EventLoop*)>;
+    using InitCallback = std::function<void(EventLoop&)>;
 
 public:
     EventLoopThreadPoll(EventLoop&);
     ~EventLoopThreadPoll();
 
-    void start(size_t numOfThreads);
+    void start();
     void stop();
 
     EventLoop* getNext();       /* 按顺序获取下一个 */
@@ -28,15 +28,17 @@ public:
     std::vector<EventLoop*> getAllLoops();
 
     void setInitCallback(InitCallback);
+    void setThreadNum(size_t);
 
 private:
     EventLoop& baseLoop_;
     std::vector<EventLoopPtr> loops_;
     std::vector<std::thread> threads_;
-    InitCallback initCall_;
+    InitCallback initCb_;
     std::mutex mutex_;
     bool start_;
     int index_;
+    size_t threadNum_;
 };
 
 }

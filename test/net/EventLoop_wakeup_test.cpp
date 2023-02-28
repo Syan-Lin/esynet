@@ -13,7 +13,7 @@ int global = 0;
 
 void test(EventLoop& loop) {
     std::this_thread::sleep_for(std::chrono::milliseconds(3500));
-    loop.runInLoop([&loop] {
+    loop.run([&loop] {
         global++;
         loop.stop();
     });

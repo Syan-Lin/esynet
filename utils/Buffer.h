@@ -3,6 +3,7 @@
 #include <cstddef>
 #include <cstring>
 #include <string>
+#include <sys/types.h>
 #include <vector>
 #include <sys/uio.h>
 
@@ -123,11 +124,59 @@ public:
     }
 
     using ReadableRange = std::pair<const char*, const char*>;
-    ReadableRange read() { return { beginRead(), endRead()}; }
+    ReadableRange readRange() { return { beginRead(), endRead()}; }
     /* 获取数据头指针 */
     const char* beginRead() const { return begin() + readerIndex_; }
     /* 获取数据尾后指针 */
     const char* endRead() const { return begin() + writerIndex_; }
+
+    /* 读取数据，且移动读指针 */
+    int8_t readByte() {
+        int8_t result;
+        std::copy(beginRead(), beginRead() + sizeof(result), &result);
+        retrieve(sizeof(result));
+        return result;
+    }
+    int16_t readByte2() {
+        int16_t result;
+        std::copy(beginRead(), beginRead() + sizeof(result), &result);
+        retrieve(sizeof(result));
+        return result;
+    }
+    int32_t readByte4() {
+        int32_t result;
+        std::copy(beginRead(), beginRead() + sizeof(result), &result);
+        retrieve(sizeof(result));
+        return result;
+    }
+    int64_t readByte8() {
+        int64_t result;
+        std::copy(beginRead(), beginRead() + sizeof(result), &result);
+        retrieve(sizeof(result));
+        return result;
+    }
+
+    /* 读取数据，但不移动读指针 */
+    int8_t peekByte() const {
+        int8_t result;
+        std::copy(beginRead(), beginRead() + sizeof(result), &result);
+        return result;
+    }
+    int16_t peekByte2() const {
+        int16_t result;
+        std::copy(beginRead(), beginRead() + sizeof(result), &result);
+        return result;
+    }
+    int32_t peekByte4() const {
+        int32_t result;
+        std::copy(beginRead(), beginRead() + sizeof(result), &result);
+        return result;
+    }
+    int64_t peekByte8() const {
+        int64_t result;
+        std::copy(beginRead(), beginRead() + sizeof(result), &result);
+        return result;
+    }
 
     /* 移动数据头指针，代表真正取出数据，数据头指针之前可随时被覆盖 */
     void retrieve(size_t len) {
@@ -196,7 +245,7 @@ public:
 
     /* 从Socket中读取数据，错误时会将error设为值，水平触发不用担心一次读取不完的问题
      * 如果是边沿触发，则需要考虑 */
-    size_t read(Socket sock, int& error) {
+    size_t readSocket(Socket sock, int& error) {
         char extraBuf[64_KB];
         struct iovec vec[2];
         const size_t writable = writableBytes();
@@ -208,7 +257,7 @@ public:
         /* Buffer空间足够时，不会使用extraBuf，当空间不够时，才使用extraBuf，并在
          * 后续填充至Buffer中，这样做的理由是只需要一次系统调用就可以获得足够大的
          * 数据，而不必预先在Buffer中预留大量的空间来准备可能（很少）来临的大数据 */
-        const ssize_t n = readv(sock.fd(), vec, 2);
+        const ssize_t n = sock.readv(vec, 2);
         if (n < 0) {
             error = errno;
         } else if (n <= writable) {
@@ -238,9 +287,7 @@ private:
         } else {
             /* 将数据往前移 */
             size_t readable = readableBytes();
-            std::copy(begin()+readerIndex_,
-                        begin()+writerIndex_,
-                        begin()+kCheapPrepend);
+            std::copy(beginRead(), endRead(), begin() + kCheapPrepend);
             readerIndex_ = kCheapPrepend;
             writerIndex_ = readerIndex_ + readable;
         }

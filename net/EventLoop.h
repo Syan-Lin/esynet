@@ -61,8 +61,8 @@ public:
     void cancelTimer(Timer::ID);
 
     /* 由该EventLoop所属的线程来调用传入函数 */
-    void runInLoop(Function);       /* 立刻唤醒执行 */
-    void queueInLoop(Function);     /* 等待唤醒，稍后执行 */
+    void run(Function);       /* 立刻唤醒执行 */
+    void queue(Function);     /* 等待唤醒，稍后执行 */
 
     bool isInLoopThread() const;
     bool isLooping() const;

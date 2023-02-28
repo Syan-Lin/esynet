@@ -9,6 +9,7 @@
 
 /* Linux headers */
 #include <sys/socket.h>
+#include <sys/uio.h>
 
 using esynet::Socket;
 
@@ -31,7 +32,7 @@ Socket& Socket::operator=(Socket&& sock) {
 }
 Socket::~Socket() {
     if(fd_.unique()) {
-        if(close(*fd_) == -1) {
+        if(::close(*fd_) == -1) {
             LOG_ERROR("close error(fd: {}, errno: {})", *fd_, strerror(errno));
         }
     }
@@ -52,11 +53,15 @@ void Socket::listen() {
         LOG_FATAL("listen failed(fd: {}, errno: {})", *fd_, strerror(errno));
     }
 }
-int Socket::accept() {
+void Socket::close() {
+    shutdownRead();
+    shutdownWrite();
+}
+std::optional<int> Socket::accept() {
     InetAddress peerAddr;
     return accept(peerAddr);
 }
-int Socket::accept(InetAddress& peerAddr) {
+std::optional<int> Socket::accept(InetAddress& peerAddr) {
     InetAddress::SockAddr addr;
     socklen_t len;
     int connFd = ::accept4(*fd_, &addr, &len, SOCK_NONBLOCK | SOCK_CLOEXEC);
@@ -68,9 +73,35 @@ int Socket::accept(InetAddress& peerAddr) {
         } else {
             LOG_ERROR("accept failed(fd: {}, errno: {})", *fd_, strerror(errno));
         }
+        return std::nullopt;
     }
     peerAddr.setSockAddr(addr);
     return connFd;
+}
+std::vector<int> Socket::accept(std::vector<InetAddress>& peerAddrs) {
+    std::vector<int> fds;
+    while(true) {
+        InetAddress::SockAddr addr;
+        socklen_t len;
+        int connFd = ::accept4(*fd_, &addr, &len, SOCK_NONBLOCK | SOCK_CLOEXEC);
+        if(connFd == -1) {
+            if(errno == EINTR) {
+            } else if(errno == EMFILE || errno == ECONNABORTED) {
+                LOG_INFO("accept failed(fd: {}, errno: {})", *fd_, strerror(errno));
+            } else if(errno == ENFILE || errno == ENOMEM) {
+                LOG_FATAL("accept failed(fd: {}, errno: {})", *fd_, strerror(errno));
+            } else {
+                LOG_ERROR("accept failed(fd: {}, errno: {})", *fd_, strerror(errno));
+            }
+            break;
+        } else {
+            fds.push_back(connFd);
+            InetAddress peerAddr;
+            peerAddr.setSockAddr(addr);
+            peerAddrs.push_back(peerAddr);
+        }
+    }
+    return fds;
 }
 void Socket::connect(const InetAddress& peerAddr) {
     auto& addr = peerAddr.getSockAddr();
@@ -135,4 +166,14 @@ void Socket::setKeepAlive(bool on) {
     if(setsockopt(*fd_, IPPROTO_TCP, SO_KEEPALIVE, &optval, sizeof optval) == -1) {
         LOG_ERROR("setKeepAlive failed(fd: {}, errno: )", *fd_, strerror(errno));
     }
+}
+
+size_t Socket::write(const void* data, size_t len) {
+    return ::write(*fd_, data, len);
+}
+size_t Socket::read(void* buf, size_t len) {
+    return ::read(*fd_, buf, len);
+}
+size_t Socket::readv(const struct iovec* iov, int iovCount) {
+    return ::readv(*fd_, iov, iovCount);
 }

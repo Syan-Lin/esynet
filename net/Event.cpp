@@ -38,8 +38,10 @@ void Event::setErrorCallback(Callback callback) {
     errorCallback_ = callback;
 }
 
-short Event::fd() const { return fd_; }
+int Event::fd() const { return fd_; }
 short Event::listenedEvent() const { return listenedEvents_; }
+bool Event::writable() const { return happenedEvents_ & kWriteEvent; }
+bool Event::readable() const { return happenedEvents_ & kReadEvent; }
 void Event::setHappenedEvent(int event) { happenedEvents_ = event; }
 
 void Event::enableReading() {

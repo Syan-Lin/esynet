@@ -8,6 +8,7 @@
 #include "net/Event.h"
 #include "net/thread/EventLoopThreadPoll.h"
 #include "net/poller/EpollPoller.h"
+#include "net/base/Socket.h"
 
 #include <sys/timerfd.h>
 #include <dbg.h>
@@ -24,7 +25,10 @@ int main() {
     EventLoop loop;
     EventLoopThreadPoll poll(loop);
 
-    poll.start(4);
+    Socket sock;
+
+    poll.setThreadNum(4);
+    poll.start();
     sleep(1);
     poll.stop();
 

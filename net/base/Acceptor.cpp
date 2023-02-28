@@ -7,7 +7,7 @@ using esynet::Acceptor;
 
 Acceptor::Acceptor(EventLoop& loop, const InetAddress& localAddr)
                     : loop_(loop), acceptEvent_(loop, acceptSocket_.fd()),
-                      listen_(false) {
+                      listen_(false), port_(localAddr.port()) {
     acceptSocket_.setReuseAddr(true);
     acceptSocket_.setReusePort(true);
     acceptSocket_.bind(localAddr);
@@ -38,10 +38,10 @@ void Acceptor::OnConnection() {
         LOG_FATAL("Call OnConnection() not in loop({:p}) thread", static_cast<void*>(this));
     }
     InetAddress peerAddr;
-    Socket connSock = acceptSocket_.accept(peerAddr);
-    if(connSock.fd() >= 0) {
+    auto connSock = acceptSocket_.accept(peerAddr);
+    if(connSock.has_value()) {
         if(connCb_) {
-            connCb_(connSock, peerAddr);
+            connCb_(connSock.value(), peerAddr);
         }
     }
 }
