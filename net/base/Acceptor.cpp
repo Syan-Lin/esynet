@@ -7,11 +7,11 @@
 
 using esynet::Acceptor;
 
-Acceptor::Acceptor(Reactor& reactor, const InetAddress& localAddr)
-                    : reactor_(reactor)
-                    , acceptEvent_(reactor, acceptSocket_.fd())
-                    , listen_(false)
-                    , port_(localAddr.port()) {
+Acceptor::Acceptor(Reactor& reactor, const InetAddress& localAddr):
+                    reactor_(reactor),
+                    acceptEvent_(reactor, acceptSocket_.fd()),
+                    listen_(false),
+                    port_(localAddr.port()) {
     acceptSocket_.setReuseAddr(true);
     acceptSocket_.setReusePort(true);
     acceptSocket_.bind(localAddr);
@@ -25,7 +25,7 @@ Acceptor::~Acceptor() {
 void Acceptor::setConnectionCallback(ConnectionCallback cb) {
     connCb_ = cb;
 }
-bool Acceptor::listening() {
+bool Acceptor::listening() const {
     return listen_;
 }
 void Acceptor::listen() {
@@ -34,7 +34,7 @@ void Acceptor::listen() {
         LOG_FATAL("Call listen() in another thread: reactor({:p})", static_cast<void*>(this));
     }
     acceptSocket_.listen();
-    acceptEvent_.enableReading();
+    acceptEvent_.enableRead();
 }
 
 void Acceptor::OnConnection() {

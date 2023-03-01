@@ -6,9 +6,9 @@
 using esynet::Event;
 using esynet::Reactor;
 
-Event::Event(Reactor& loop, int fd)
-        : reactor_(loop), fd_(fd), listenedEvents_(-1),
-          happenedEvents_(0), indexInPoll_(-1) {}
+Event::Event(Reactor& loop, int fd):
+        reactor_(loop), fd_(fd), listenedEvents_(-1),
+        happenedEvents_(0), indexInPoll_(-1) {}
 
 void Event::handle() {
     if(happenedEvents_ & kCloseEvent) {
@@ -44,22 +44,22 @@ bool Event::writable() const { return happenedEvents_ & kWriteEvent; }
 bool Event::readable() const { return happenedEvents_ & kReadEvent; }
 void Event::setHappenedEvent(int event) { happenedEvents_ = event; }
 
-void Event::enableReading() {
+void Event::enableRead() {
     if(listenedEvents_ == kNoneEvent) listenedEvents_ = 0;
     listenedEvents_ |= kReadEvent;
     update();
 }
-void Event::enableWriting() {
+void Event::enableWrite() {
     if(listenedEvents_ == kNoneEvent) listenedEvents_ = 0;
     listenedEvents_ |= kWriteEvent;
     update();
 }
-void Event::disableWriting() {
+void Event::disableWrite() {
     listenedEvents_ &= ~kWriteEvent;
     if(listenedEvents_ == 0) listenedEvents_ = kNoneEvent;
     update();
 }
-void Event::disableReading() {
+void Event::disableRead() {
     listenedEvents_ &= ~kReadEvent;
     if(listenedEvents_ == 0) listenedEvents_ = kNoneEvent;
     update();

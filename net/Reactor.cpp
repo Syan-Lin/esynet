@@ -36,13 +36,13 @@ int createEventFd() {
     return fd;
 }
 
-Reactor::Reactor(bool useEpoll)
-        : stop_(false),
-          numOfEvents_(0),
-          isLooping_(false),
-          wakeupFd_(createEventFd()),
-          wakeupEvent_(*this, wakeupFd_),
-          tid_(std::this_thread::get_id()) {
+Reactor::Reactor(bool useEpoll):
+            stop_(false),
+            numOfEvents_(0),
+            isLooping_(false),
+            wakeupFd_(createEventFd()),
+            wakeupEvent_(*this, wakeupFd_),
+            tid_(std::this_thread::get_id()) {
     if(t_reactorInCurThread) {
         LOG_FATAL("Another Reactor({:p}) exists in this thread({})",
                     static_cast<void*>(t_reactorInCurThread), tidToStr());
@@ -66,7 +66,7 @@ Reactor::Reactor(bool useEpoll)
         }
         LOG_DEBUG("Wake up Reactor({:p})", static_cast<void*>(this));
     });
-    wakeupEvent_.enableReading();
+    wakeupEvent_.enableRead();
 }
 
 Reactor::~Reactor() {

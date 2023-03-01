@@ -43,8 +43,8 @@ const std::string& Logger::levelToString(LogLevel level) const {
     return Logger::gLogName.at(NONE);
 }
 
-Logger::Logger(const char* file, int line, const char* func, LogLevel level)
-        : line_(line), func_(func), level_(level) {
+Logger::Logger(const char* file, int line, const char* func, LogLevel level):
+            line_(line), func_(func), level_(level) {
     file_ = strrchr(file, '/') + 1;
     time_ = Timestamp::now();
 }

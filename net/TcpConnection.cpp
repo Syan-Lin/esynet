@@ -15,7 +15,9 @@ void TcpConnection::defaultConnectionCallback(TcpConnection& conn) {
 }
 
 void TcpConnection::defaultMessageCallback(
-        TcpConnection& conn, utils::Buffer& buf, utils::Timestamp) {
+                                    TcpConnection& conn,
+                                    utils::Buffer& buf,
+                                    utils::Timestamp) {
     LOG_DEBUG("Message from {} is \"{}\"",
         conn.peerAddress().ip(), buf.retrieveAllAsString());
 }
@@ -57,7 +59,7 @@ bool TcpConnection::connected() const {
 bool TcpConnection::disconnected() const {
     return state_ == kDisconnected;
 }
-TcpConnection::TcpInfo TcpConnection::tcpInfo() const {
+std::optional<TcpConnection::TcpInfo> TcpConnection::tcpInfo() const {
     return socket_.getTcpInfo();
 }
 std::string TcpConnection::tcpInfoStr() const {
@@ -105,7 +107,7 @@ void TcpConnection::send(const void* data, size_t len) {
                 }
                 outputBuffer_.append(static_cast<const char*>(data) + wrote, len);
                 if(!event_.writable()) {
-                    event_.enableWriting();
+                    event_.enableWrite();
                 }
             }
         });
@@ -138,14 +140,14 @@ void TcpConnection::setTcpNoDelay(bool on) {
 void TcpConnection::startRead() {
     reactor_.run([this] {
         if(!event_.readable()) {
-            event_.enableReading();
+            event_.enableRead();
         }
     });
 }
 void TcpConnection::stopRead() {
     reactor_.run([this] {
         if(event_.readable()) {
-            event_.disableReading();
+            event_.disableRead();
         }
     });
 }
@@ -183,7 +185,7 @@ esynet::utils::Buffer& TcpConnection::outputBuffer() {
 
 void TcpConnection::connectEstablished() {
     state_ = kConnected;
-    event_.enableReading();
+    event_.enableRead();
     connectionCb_(*this);
 }
 void TcpConnection::connectDestroyed() {
@@ -218,7 +220,7 @@ void TcpConnection::handleWrite() {
         if(bytes > 0) {
             outputBuffer_.retrieve(bytes);
             if(outputBuffer_.readableBytes() == 0) {
-                event_.disableWriting();
+                event_.disableWrite();
                 if(writeCompleteCb_) {
                     reactor_.queue([this] {
                         writeCompleteCb_(*this);

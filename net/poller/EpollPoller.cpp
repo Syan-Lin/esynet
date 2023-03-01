@@ -11,10 +11,10 @@ using esynet::utils::Timestamp;
 
 const int EpollPoller::kInitEventListSize = 16;
 
-EpollPoller::EpollPoller(Reactor& reactor)
-    : Poller(reactor),
-      epollFd_(epoll_create1(EPOLL_CLOEXEC)),
-      epollEvents_(kInitEventListSize) {
+EpollPoller::EpollPoller(Reactor& reactor):
+                    Poller(reactor),
+                    epollFd_(epoll_create1(EPOLL_CLOEXEC)),
+                    epollEvents_(kInitEventListSize) {
     if(epollFd_ < 0) {
         LOG_FATAL("epoll_create1 error(err: {})", errnoStr(errno));
     }

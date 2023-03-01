@@ -8,9 +8,9 @@ using esynet::logger::AsyncLogger;
 using esynet::utils::FileWriter;
 using esynet::utils::Timestamp;
 
-AsyncLogger::AsyncLogger(std::filesystem::path path, int flushInterval)
-        : file_(new FileWriter(std::filesystem::current_path()/path))
-        , flushInterval_(flushInterval)  {
+AsyncLogger::AsyncLogger(std::filesystem::path path, int flushInterval):
+        file_(new FileWriter(std::filesystem::current_path()/path)),
+        flushInterval_(flushInterval)  {
     buffer_ = std::make_unique<Buffer>();
     backupBuffer_ = std::make_unique<Buffer>();
     running_ = false;

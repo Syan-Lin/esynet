@@ -5,8 +5,8 @@
 using esynet::ReactorThreadPoll;
 using esynet::Reactor;
 
-ReactorThreadPoll::ReactorThreadPoll(Reactor& reactor)
-    : mainReactor_(reactor), start_(false), index_(0), threadNum_(0) {}
+ReactorThreadPoll::ReactorThreadPoll(Reactor& reactor):
+                mainReactor_(reactor), start_(false), index_(0), threadNum_(0) {}
 ReactorThreadPoll::~ReactorThreadPoll() { stop(); }
 
 void ReactorThreadPoll::start() {

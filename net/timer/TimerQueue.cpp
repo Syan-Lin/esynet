@@ -35,12 +35,12 @@ void TimerQueue::updateTimerFd() {
     }
 }
 
-TimerQueue::TimerQueue(Reactor& reactor)
-        : reactor_(reactor)
-        , timerFd_(createTimerFd())
-        , timerEvent_(reactor, timerFd_) {
+TimerQueue::TimerQueue(Reactor& reactor):
+                reactor_(reactor),
+                timerFd_(createTimerFd()),
+                timerEvent_(reactor, timerFd_) {
     timerEvent_.setReadCallback(std::bind(&TimerQueue::handle, this));
-    timerEvent_.enableReading();
+    timerEvent_.enableRead();
 }
 TimerQueue::~TimerQueue() {
     reactor_.removeEvent(timerEvent_);

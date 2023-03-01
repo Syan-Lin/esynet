@@ -18,7 +18,8 @@ TcpServer::TcpServer(Reactor& reactor, InetAddress addr, utils::StringPiece name
         name_(name.asString()),
         acceptor_(reactor, addr),
         threadPoll_(reactor),
-        started_(false) {
+        started_(false),
+        nextConnId_(1) {
     connectionCb_ = TcpConnection::defaultConnectionCallback;
     messageCb_ = TcpConnection::defaultMessageCallback;
     acceptor_.setConnectionCallback(std::bind(
@@ -87,9 +88,14 @@ void TcpServer::OnConnection(Socket socket, const InetAddress& peerAddr) {
     } else {
         reactor = threadPoll_.getNext();
     }
-    std::string connName = name_ + "-" + peerAddr.ip() + ":" + std::to_string(peerAddr.port());
+    std::string connName = name_ + "-" + peerAddr.ip() + ":"
+                            + std::to_string(peerAddr.port()) + "-" + std::to_string(nextConnId_++);
 
-    auto localAddr = InetAddress::getLocalAddr(socket);
+    auto local = InetAddress::getLocalAddr(socket);
+    InetAddress localAddr;
+    if(local.has_value()) {
+        localAddr = local.value();
+    }
     TcpConnectionPtr conn = std::make_shared<TcpConnection>(
                                 *reactor, connName, socket, localAddr, peerAddr);
     connections_[conn->name()] = conn;

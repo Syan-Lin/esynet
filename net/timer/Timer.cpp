@@ -7,9 +7,9 @@ using esynet::utils::Timestamp;
 std::atomic<Timer::ID> Timer::idCounter_(0);
 Timer::ID Timer::nextId() { return idCounter_++; }
 
-Timer::Timer(Callback callback, Timestamp expiration, double interval)
-        : id_(nextId()), repeat_(interval > 0.0), callback_(callback),
-          interval_(interval), expiration_(expiration) {}
+Timer::Timer(Callback callback, Timestamp expiration, double interval):
+        id_(nextId()), repeat_(interval > 0.0), callback_(callback),
+        interval_(interval), expiration_(expiration) {}
 
 void Timer::run() {
     callback_();

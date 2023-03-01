@@ -42,14 +42,14 @@ public:
     ~TcpConnection();
 
     /* 状态相关 */
-    const std::string&  name()          const;
-    const InetAddress&  localAddress()  const;
-    const InetAddress&  peerAddress()   const;
-    bool                connected()     const;
-    bool                disconnected()  const;
-    TcpInfo             tcpInfo()    const;
-    std::string         tcpInfoStr() const;
-    Reactor&            reactor() const;
+    const std::string&      name()          const;
+    const InetAddress&      localAddress()  const;
+    const InetAddress&      peerAddress()   const;
+    bool                    connected()     const;
+    bool                    disconnected()  const;
+    std::optional<TcpInfo>  tcpInfo()    const;
+    std::string             tcpInfoStr() const;
+    Reactor&                reactor() const;
 
     /* 操作 */
     void send(const void*, size_t);

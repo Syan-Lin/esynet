@@ -24,7 +24,7 @@ public:
     ~Acceptor();
 
     void setConnectionCallback(ConnectionCallback);
-    bool listening(); /* 线程安全 */
+    bool listening() const; /* 线程安全 */
     void listen();
 
 private:

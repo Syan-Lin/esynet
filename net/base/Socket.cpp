@@ -15,6 +15,31 @@
 
 using esynet::Socket;
 
+std::optional<int> Socket::getSocketError(Socket socket) {
+    int optval;
+    socklen_t optLen = static_cast<socklen_t>(sizeof optval);
+
+    if (::getsockopt(socket.fd(), SOL_SOCKET, SO_ERROR, &optval, &optLen) < 0) {
+        return errno;
+    }
+    return std::nullopt;
+}
+bool Socket::isSelfConnect(Socket socket) {
+    auto local = InetAddress::getLocalAddr(socket);
+    auto peer = InetAddress::getLocalAddr(socket);
+    if(local.has_value() && peer.has_value()) {
+        struct sockaddr_in6&
+        localAddr = (sockaddr_in6&)local.value().getSockAddr();
+        struct sockaddr_in6&
+        peerAddr = (sockaddr_in6&)peer.value().getSockAddr();
+        const struct sockaddr_in* laddr4 = reinterpret_cast<struct sockaddr_in*>(&localAddr);
+        const struct sockaddr_in* raddr4 = reinterpret_cast<struct sockaddr_in*>(&peerAddr);
+        return (laddr4->sin_port == raddr4->sin_port)
+                    && (laddr4->sin_addr.s_addr == raddr4->sin_addr.s_addr);
+    }
+    return false;
+}
+
 Socket::Socket() : fd_(std::make_shared<const int>(
                         socket(AF_INET, SOCK_STREAM | SOCK_NONBLOCK | SOCK_CLOEXEC, 0))) {
     if(*fd_ == -1) {
@@ -105,14 +130,16 @@ std::vector<int> Socket::accept(std::vector<InetAddress>& peerAddrs) {
     }
     return fds;
 }
-void Socket::connect(const InetAddress& peerAddr) {
+std::optional<int> Socket::connect(const InetAddress& peerAddr) {
     auto& addr = peerAddr.getSockAddr();
     if(::connect(*fd_, &addr, sizeof addr) == -1) {
         LOG_ERROR("connect failed(fd: {}, errno: {})", *fd_, errnoStr(errno));
+        return errno;
     }
+    return std::nullopt;
 }
 
-Socket::TcpInfo Socket::getTcpInfo() const {
+std::optional<Socket::TcpInfo> Socket::getTcpInfo() const {
     TcpInfo info;
     socklen_t len = sizeof info;
     memset(&info, 0, len);
@@ -125,13 +152,16 @@ Socket::TcpInfo Socket::getTcpInfo() const {
 std::string Socket::getTcpInfoString() const {
     auto tcpInfo = getTcpInfo();
     std::stringstream ss;
-    ss << "retransmits = " << tcpInfo.tcpi_retransmits
-       << ", rto = " << tcpInfo.tcpi_rto << ", ato = " << tcpInfo.tcpi_ato
-       << ", snd_mss = " << tcpInfo.tcpi_snd_mss << ", rcv_mss = " << tcpInfo.tcpi_rcv_mss
-       << ", lost = " << tcpInfo.tcpi_lost << ", retrans = " << tcpInfo.tcpi_retrans
-       << ", rtt = " << tcpInfo.tcpi_rtt << ", rttvar = " << tcpInfo.tcpi_rttvar
-       << ", ssthresh = " << tcpInfo.tcpi_snd_ssthresh << ", cwnd = " << tcpInfo.tcpi_snd_cwnd
-       << ", total_retrans = " << tcpInfo.tcpi_total_retrans;
+    if(tcpInfo.has_value()) {
+        auto& val = tcpInfo.value();
+        ss << "retransmits = " << val.tcpi_retransmits
+        << ", rto = " << val.tcpi_rto << ", ato = " << val.tcpi_ato
+        << ", snd_mss = " << val.tcpi_snd_mss << ", rcv_mss = " << val.tcpi_rcv_mss
+        << ", lost = " << val.tcpi_lost << ", retrans = " << val.tcpi_retrans
+        << ", rtt = " << val.tcpi_rtt << ", rttvar = " << val.tcpi_rttvar
+        << ", ssthresh = " << val.tcpi_snd_ssthresh << ", cwnd = " << val.tcpi_snd_cwnd
+        << ", total_retrans = " << val.tcpi_total_retrans;
+    }
     return ss.str();
 }
 

@@ -14,13 +14,13 @@ std::string gStrForTest;
 
 void readCallBack(Event& event) {
     gStrForTest += "r";
-    event.disableReading();
-    event.disableReading();
+    event.disableRead();
+    event.disableRead();
 }
 void writeCallBack(Event& event) {
     gStrForTest += "w";
-    event.disableWriting();
-    event.disableWriting();
+    event.disableWrite();
+    event.disableWrite();
 }
 void errorCallBack(Event& event) {
     gStrForTest += "e";
@@ -44,10 +44,10 @@ TEST_CASE("EventLoop_Test"){
         timerfd_settime(close_fd, 0, &closetime, NULL);
         Event stopEvent(loop, close_fd);
         stopEvent.setReadCallback(std::bind(stopLoop, std::ref(loop)));
-        stopEvent.enableReading();
-        stopEvent.disableReading();
-        stopEvent.enableReading();
-        stopEvent.disableWriting();
+        stopEvent.enableRead();
+        stopEvent.disableRead();
+        stopEvent.enableRead();
+        stopEvent.disableWrite();
 
         /* 测试读事件监听 */
         int timer_fd = timerfd_create(CLOCK_MONOTONIC, TFD_NONBLOCK | TFD_CLOEXEC);
@@ -58,21 +58,21 @@ TEST_CASE("EventLoop_Test"){
 
         Event readEvent(loop, timer_fd);
         readEvent.setReadCallback(std::bind(readCallBack, std::ref(readEvent)));
-        readEvent.enableReading(); /* 会委托 loop 更新 poll */
+        readEvent.enableRead(); /* 会委托 loop 更新 poll */
 
         /* 测试写事件监听 */
         int write_fd = fileno(stdout);
 
         Event writeEvent(loop, write_fd);
         writeEvent.setWriteCallback(std::bind(writeCallBack, std::ref(writeEvent)));
-        writeEvent.enableWriting(); /* 会委托 loop 更新 poll */
+        writeEvent.enableWrite(); /* 会委托 loop 更新 poll */
 
         sleep(1);
 
         /* 测试错误事件监听 */
         Event errorEvent(loop, 1024);
         errorEvent.setErrorCallback(std::bind(errorCallBack, std::ref(errorEvent)));
-        errorEvent.enableReading();
+        errorEvent.enableRead();
 
         loop.start();
         close(timer_fd);
@@ -91,10 +91,10 @@ TEST_CASE("EventLoop_Test"){
         timerfd_settime(close_fd, 0, &closetime, NULL);
         Event stopEvent(loop, close_fd);
         stopEvent.setReadCallback(std::bind(stopLoop, std::ref(loop)));
-        stopEvent.enableReading();
-        stopEvent.disableReading();
-        stopEvent.enableReading();
-        stopEvent.disableWriting();
+        stopEvent.enableRead();
+        stopEvent.disableRead();
+        stopEvent.enableRead();
+        stopEvent.disableWrite();
 
         /* 测试读事件监听 */
         int timer_fd = timerfd_create(CLOCK_MONOTONIC, TFD_NONBLOCK | TFD_CLOEXEC);
@@ -105,19 +105,19 @@ TEST_CASE("EventLoop_Test"){
 
         Event readEvent(loop, timer_fd);
         readEvent.setReadCallback(std::bind(readCallBack, std::ref(readEvent)));
-        readEvent.enableReading(); /* 会委托 loop 更新 poll */
+        readEvent.enableRead(); /* 会委托 loop 更新 poll */
 
         /* 测试写事件监听 */
         int write_fd = fileno(stdout);
 
         Event writeEvent(loop, write_fd);
         writeEvent.setWriteCallback(std::bind(writeCallBack, std::ref(writeEvent)));
-        writeEvent.enableWriting(); /* 会委托 loop 更新 poll */
+        writeEvent.enableWrite(); /* 会委托 loop 更新 poll */
 
         /* 测试错误事件监听 */
         Event errorEvent(loop, 1024);
         errorEvent.setErrorCallback(std::bind(errorCallBack, std::ref(errorEvent)));
-        errorEvent.enableReading();
+        errorEvent.enableRead();
 
         loop.start();
         close(timer_fd);

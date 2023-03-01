@@ -48,9 +48,7 @@ public:
     void start(); /* 线程安全，开始监听 */
 
 private:
-    /* 非线程安全 */
     void OnConnection(Socket, const InetAddress&);
-    /* 线程安全 */
     void removeConnection(TcpConnection& conn);
 
     Reactor& reactor_;

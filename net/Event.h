@@ -33,10 +33,10 @@ public:
     void setHappenedEvent(int event);
 
     /* 设置监听事件 */
-    void enableReading();
-    void enableWriting();
-    void disableWriting();
-    void disableReading();
+    void enableRead();
+    void enableWrite();
+    void disableWrite();
+    void disableRead();
     void disableAll();
 
     /* Poller相关 */
