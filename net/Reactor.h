@@ -41,7 +41,8 @@ private:
     using Timestamp = utils::Timestamp;
     using Function = std::function<void()>;
 
-    std::string tidToStr() const;
+    std::string tidToStr(const std::thread::id) const;
+    bool isInLoopThread() const;
     void wakeup();
 
 public:
@@ -64,7 +65,7 @@ public:
     void run(Function);       /* 立刻唤醒执行 */
     void queue(Function);     /* 等待唤醒，稍后执行 */
 
-    bool isInLoopThread() const;
+    void assert() const;
     bool isLooping() const;
     int numOfEvents();
 

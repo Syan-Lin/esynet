@@ -4,6 +4,7 @@
 #include <memory>
 
 using esynet::TcpClient;
+using esynet::Reactor;
 
 TcpClient::TcpClient(Reactor& reactor,
                     InetAddress addr,
@@ -24,13 +25,9 @@ TcpClient::TcpClient(Reactor& reactor,
 
 TcpClient::~TcpClient() {
     TcpConnectionPtr conn;
-    bool unique = false;
-    {
-        std::unique_lock<std::mutex> lock(mutex_);
-        unique = connection_.unique();
-        conn = connection_;
-    }
-    if (conn) {
+    bool unique = connection_.unique();
+    conn = connection_;
+    if(conn) {
         auto cb = [this](TcpConnection& conn) {
             removeConnection(conn);
         };
@@ -47,25 +44,32 @@ void TcpClient::connect() {
     tryToConnect_ = true;
     connector_->start();
 }
-
 void TcpClient::disconnect() {
     tryToConnect_ = false;
-    {
-        std::unique_lock<std::mutex> lock(mutex_);
-        if(connection_) connection_->shutdown();
-    }
+    if(connection_) connection_->close();
 }
-
 void TcpClient::stop() {
     tryToConnect_ = false;
     connector_->stop();
 }
 
+TcpClient::TcpConnectionPtr TcpClient::connection() const {
+    return connection_;
+}
+Reactor& TcpClient::reactor() const {
+    return reactor_;
+}
+const std::string& TcpClient::name() const {
+    return name_;
+}
+
 void TcpClient::onConnection(Socket socket) {
     std::optional<InetAddress> peerPkg = InetAddress::getPeerAddr(socket);
     std::optional<InetAddress> localPkg = InetAddress::getLocalAddr(socket);
-    if(!peerPkg.has_value() || !localPkg.has_value()) {
-
+    if(!peerPkg.has_value()) {
+        LOG_ERROR("Failed getPeerAddr(fd: {})", socket.fd());
+    } else if(!localPkg.has_value()) {
+        LOG_ERROR("Failed getLocalAddr(fd: {})", socket.fd());
     }
     nextConnId_++;
     InetAddress peer = peerPkg.value();
@@ -79,24 +83,18 @@ void TcpClient::onConnection(Socket socket) {
     conn->setConnectionCallback(connectionCb_);
     conn->setMessageCallback(messageCb_);
     conn->setWriteCompleteCallback(writeCompleteCb_);
+    conn->setErrorCallback(errorCb_);
     conn->setCloseCallback([this](TcpConnection& tcpConn) {
         removeConnection(tcpConn);
+        closeCb_(tcpConn);
     });
-    {
-        std::unique_lock<std::mutex> lock(mutex_);
-        connection_ = conn;
-    }
-    conn->connectEstablished();
+    connection_ = conn;
+    conn->connectComplete();
 }
 
 void TcpClient::removeConnection(TcpConnection& conn) {
-    {
-        std::unique_lock<std::mutex> lock(mutex_);
-        connection_.reset();
-    }
-    reactor_.queue([&conn] {
-        conn.connectDestroyed();
-    });
+    connection_.reset();
+    conn.disconnectComplete();
     if(retry_ && tryToConnect_) {
         connector_->restart();
     }

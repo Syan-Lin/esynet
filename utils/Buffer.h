@@ -10,6 +10,7 @@
 #include "StringPiece.h"
 #include "logger/Logger.h"
 #include "net/base/Socket.h"
+#include "exception/SocketException.h"
 
 constexpr int operator""_B(unsigned long long num) {
     return num;
@@ -246,7 +247,7 @@ public:
 
     /* 从Socket中读取数据，错误时会将error设为值，水平触发不用担心一次读取不完的问题
      * 如果是边沿触发，则需要考虑 */
-    size_t readSocket(Socket sock, int& error) {
+    size_t readSocket(Socket sock) {
         char extraBuf[64_KB];
         struct iovec vec[2];
         const size_t writable = writableBytes();
@@ -258,15 +259,21 @@ public:
         /* Buffer空间足够时，不会使用extraBuf，当空间不够时，才使用extraBuf，并在
          * 后续填充至Buffer中，这样做的理由是只需要一次系统调用就可以获得足够大的
          * 数据，而不必预先在Buffer中预留大量的空间来准备可能（很少）来临的大数据 */
-        const ssize_t n = sock.readv(vec, 2);
-        if (n < 0) {
-            error = errno;
-        } else if (n <= writable) {
+        ssize_t n = sock.readv(vec, 2);
+        if (n <= writable) {
             writerIndex_ += n;
         } else {
             writerIndex_ = buffer_.size();
             append(extraBuf, n - writable);
         }
+        // if (n < 0) {
+        //     error = errno;
+        // } else if (n <= writable) {
+        //     writerIndex_ += n;
+        // } else {
+        //     writerIndex_ = buffer_.size();
+        //     append(extraBuf, n - writable);
+        // }
         return n;
     }
 

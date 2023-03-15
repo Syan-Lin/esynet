@@ -21,6 +21,8 @@ private:
     using ConnectionCallback    = TcpConnection::ConnectionCallback;
     using WriteCompleteCallback = TcpConnection::WriteCompleteCallback;
     using MessageCallback       = TcpConnection::MessageCallback;
+    using CloseCallback         = TcpConnection::CloseCallback;
+    using ErrorCallback         = TcpConnection::ErrorCallback;
 
 public:
     TcpClient(Reactor&, InetAddress addr = 8080, utils::StringPiece name = "Server");
@@ -29,17 +31,17 @@ public:
     void connect();
     void disconnect();
     void stop();
-    void enableRetry();
 
     TcpConnectionPtr    connection() const;
     Reactor&            reactor() const;
     const std::string&  name() const;
-    void                willRetry() const;
 
     /* 非线程安全 */
     void setConnectionCallback(const ConnectionCallback&);
     void setMessageCallback(const MessageCallback&);
     void setWriteCompleteCallback(const WriteCompleteCallback&);
+    void setCloseCallback(const CloseCallback&);
+    void setErrorCallback(const ErrorCallback&);
 
     void start(); /* 线程安全，开始监听 */
 
@@ -53,14 +55,14 @@ private:
 
     ConnectionCallback connectionCb_;
     MessageCallback messageCb_;
+    CloseCallback closeCb_;
+    ErrorCallback errorCb_;
     WriteCompleteCallback writeCompleteCb_;
 
     const std::string name_;
     bool retry_;
     bool tryToConnect_;
     int nextConnId_;
-
-    std::mutex mutex_;
 };
 
 } /* namespace esynet */

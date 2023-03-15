@@ -11,10 +11,7 @@ ReactorThreadPoll::~ReactorThreadPoll() { stop(); }
 
 void ReactorThreadPoll::start() {
     if(start_ || threadNum_ == 0) return;
-    if(!mainReactor_.isInLoopThread()) {
-        LOG_FATAL("Try start thread poll in another thread(baseReactor: {:p})",
-                    static_cast<void*>(&mainReactor_));
-    }
+    mainReactor_.assert();
     for(size_t i = 0; i < threadNum_; i++) {
         threads_.emplace_back(std::thread([this] {
             /* 线程任务 */

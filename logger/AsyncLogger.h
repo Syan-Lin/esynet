@@ -36,9 +36,9 @@ private:
 private:
     const int flushInterval_;
     std::mutex mutex_;
-    std::mutex extraMutex_;
     std::thread thread_;
     std::atomic<bool> running_;
+    std::atomic<bool> isWriting_;
     std::condition_variable cond_;
     std::unique_ptr<utils::FileWriter> file_;
     BufferPtr bufferForLog_;            /* log 写入缓冲区 */

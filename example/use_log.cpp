@@ -18,7 +18,7 @@ void asyncLog(std::string& path) {
     Logger::setLogger(al);
     al.start(); /* 必须 */
     sleep(1);
-    LOG_FATAL("Hello World!");
+    LOG_INFO("Hello World!");
     al.stop();  /* 非必须，在析构时会自动 stop */
 }
 

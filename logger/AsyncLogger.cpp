@@ -11,8 +11,9 @@ using esynet::utils::Timestamp;
 AsyncLogger::AsyncLogger(std::filesystem::path path, int flushIntervalSeconds):
         file_(new FileWriter(std::filesystem::current_path()/path)),
         flushInterval_(flushIntervalSeconds),
-        running_(false) {
-    bufferForLog_ = std::make_unique<Buffer>();
+        running_(false),
+        isWriting_(false) {
+    bufferForLog_   = std::make_unique<Buffer>();
     bufferForWrite_ = std::make_unique<Buffer>();
 }
 
@@ -35,11 +36,26 @@ void AsyncLogger::stop() {
     running_ = false;
     cond_.notify_one();
     thread_.join();
+    // 保证所有数据都提交到后端写入
+    BufferQueue bufferToWrite;
+    if(!bufferForWrite_->empty()) {
+        extraBuffers_.push(std::move(bufferForWrite_));
+    }
+    if(!bufferForLog_->empty()) {
+        extraBuffers_.push(std::move(bufferForLog_));
+    }
+    while(!extraBuffers_.empty()) {
+        bufferToWrite.push(std::move(extraBuffers_.front()));
+        extraBuffers_.pop();
+    }
+    flush(bufferToWrite);
 }
 
 void AsyncLogger::append(const std::string& data) {
     if(data.size() > bufferForLog_->capacity()) {
-        std::cerr << "Dropped buffer" << std::endl;
+        std::cerr << "Data too large, ignore append" << std::endl;
+        return;
+    } else if(!running_) {
         return;
     }
 
@@ -47,17 +63,17 @@ void AsyncLogger::append(const std::string& data) {
     if(bufferForLog_->remain() > data.size()) {
         bufferForLog_->append(data);
     } else {
-        if(std::unique_lock<std::mutex> lock(extraMutex_); bufferForWrite_->empty()) {
+        if(!isWriting_ && bufferForWrite_->empty()) {
             std::swap(bufferForLog_, bufferForWrite_);
-        } else if(extraBuffers_.size() <= 64) {
+        } else if(extraBuffers_.size() < 64) {
             // 数据来不及写入，创建一个新的缓冲区
             extraBuffers_.push(std::move(bufferForLog_));
             bufferForLog_ = std::make_unique<Buffer>();
-            bufferForLog_->append(data);
-            cond_.notify_one();
         } else {
-            std::cerr << "Too many buffer, drop some" << std::endl;
+            std::cerr << "Too many buffer, ignore append" << std::endl;
         }
+        bufferForLog_->append(data);
+        cond_.notify_one();
     }
 }
 
@@ -96,8 +112,10 @@ void AsyncLogger::flush(BufferQueue& buffers) {
         buffer.reset();
     };
 
-    if(std::unique_lock<std::mutex> lock(extraMutex_); !bufferForWrite_->empty()) {
+    if(bufferForWrite_ && !bufferForWrite_->empty()) {
+        isWriting_ = true;
         write(*bufferForWrite_);
+        isWriting_ = false;
     }
     while(!buffers.empty()) {
         write(*buffers.front());
@@ -107,6 +125,6 @@ void AsyncLogger::flush(BufferQueue& buffers) {
 
 void AsyncLogger::abort() {
     stop();
-    file_->~FileWriter();
-    abort();
+    file_.reset();
+    ::abort();
 }

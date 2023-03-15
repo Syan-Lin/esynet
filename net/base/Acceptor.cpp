@@ -4,6 +4,7 @@
 #include "logger/Logger.h"
 #include "net/base/InetAddress.h"
 #include "net/Reactor.h"
+#include "exception/SocketException.h"
 
 using esynet::Acceptor;
 
@@ -14,8 +15,12 @@ Acceptor::Acceptor(Reactor& reactor, const InetAddress& localAddr):
                     port_(localAddr.port()) {
     acceptSocket_.setReuseAddr(true);
     acceptSocket_.setReusePort(true);
-    acceptSocket_.bind(localAddr);
     acceptEvent_.setReadCallback(std::bind(&Acceptor::onConnection, this));
+    try {
+        acceptSocket_.bind(localAddr);
+    } catch(exception::SocketException& e) {
+        LOG_FATAL("{}", e.detail());
+    }
 }
 
 Acceptor::~Acceptor() {
@@ -29,23 +34,23 @@ bool Acceptor::listening() const {
     return listen_;
 }
 void Acceptor::listen() {
+    reactor_.assert();
+
     listen_ = true;
-    if(!reactor_.isInLoopThread()) {
-        LOG_FATAL("Call listen() in another thread: reactor({:p})", static_cast<void*>(this));
-    }
     acceptSocket_.listen();
     acceptEvent_.enableRead();
 }
 
 void Acceptor::onConnection() {
-    if(!reactor_.isInLoopThread()) {
-        LOG_FATAL("Call OnConnection() in another thread: reactor({:p})", static_cast<void*>(this));
-    }
+    reactor_.assert();
+
     InetAddress peerAddr;
-    auto connSock = acceptSocket_.accept(peerAddr);
-    if(connSock.has_value()) {
+    try {
+        Socket connSocket = acceptSocket_.accept(peerAddr);
         if(connCb_) {
-            connCb_(connSock.value(), peerAddr);
+            connCb_(connSocket, peerAddr);
         }
+    } catch(exception::SocketException& e) {
+        LOG_ERROR("{}", e.detail());
     }
 }

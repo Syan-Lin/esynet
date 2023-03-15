@@ -21,6 +21,8 @@ private:
     using ConnectionCallback    = TcpConnection::ConnectionCallback;
     using WriteCompleteCallback = TcpConnection::WriteCompleteCallback;
     using MessageCallback       = TcpConnection::MessageCallback;
+    using CloseCallback         = TcpConnection::CloseCallback;
+    using ErrorCallback         = TcpConnection::ErrorCallback;
     using ThreadInitCallback    = std::function<void(Reactor&)>;
 
 public:
@@ -39,6 +41,8 @@ public:
     void setConnectionCallback(const ConnectionCallback&);
     void setMessageCallback(const MessageCallback&);
     void setWriteCompleteCallback(const WriteCompleteCallback&);
+    void setCloseCallback(const CloseCallback&);
+    void setErrorCallback(const ErrorCallback&);
     void setThreadInitCallback(const ThreadInitCallback&);
     void setThreadNumInPool(size_t numThreads = 0);
 
@@ -64,6 +68,8 @@ private:
     ConnectionCallback connectionCb_;
     WriteCompleteCallback writeCompleteCb_;
     MessageCallback messageCb_;
+    CloseCallback closeCb_;
+    ErrorCallback errorCb_;
 
     int nextConnId_;
     ConnectionMap connections_;

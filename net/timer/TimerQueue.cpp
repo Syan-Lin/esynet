@@ -14,7 +14,7 @@ using esynet::timer::Timer;
 int TimerQueue::createTimerFd() {
     int timerfd = timerfd_create(CLOCK_REALTIME, TFD_NONBLOCK | TFD_CLOEXEC);
     if(timerfd < 0) {
-        LOG_ERROR("Failed to create timerfd(err: {})", errnoStr(errno));
+        LOG_FATAL("Failed to create timerfd(err: {})", errnoStr(errno));
     }
     return timerfd;
 }
@@ -29,8 +29,7 @@ void TimerQueue::updateTimerFd() {
         closeTime.it_value.tv_sec = latest.secondsSinceEpoch();
         closeTime.it_value.tv_nsec = latest.microSecondsSinceEpoch() % Timestamp::kMicroSecondsPerSecond * 1000;
     }
-    int ret = timerfd_settime(timerFd_, TFD_TIMER_ABSTIME, &closeTime, nullptr);
-    if(ret) {
+    if(timerfd_settime(timerFd_, TFD_TIMER_ABSTIME, &closeTime, nullptr) == -1) {
         LOG_ERROR("Failed to set timerfd(err: {})", errnoStr(errno));
     }
 }

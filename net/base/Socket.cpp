@@ -4,6 +4,7 @@
 #include "logger/Logger.h"
 #include "net/base/InetAddress.h"
 #include "utils/ErrorInfo.h"
+#include "exception/SocketException.h"
 
 /* Standard headers */
 #include <cstring>
@@ -32,8 +33,8 @@ bool Socket::isSelfConnect(Socket socket) {
         localAddr = (sockaddr_in6&)local.value().getSockAddr();
         struct sockaddr_in6&
         peerAddr = (sockaddr_in6&)peer.value().getSockAddr();
-        const struct sockaddr_in* laddr4 = reinterpret_cast<struct sockaddr_in*>(&localAddr);
-        const struct sockaddr_in* raddr4 = reinterpret_cast<struct sockaddr_in*>(&peerAddr);
+        const struct sockaddr_in* laddr4 = (struct sockaddr_in*)(&localAddr);
+        const struct sockaddr_in* raddr4 = (struct sockaddr_in*)(&peerAddr);
         return (laddr4->sin_port == raddr4->sin_port)
                     && (laddr4->sin_addr.s_addr == raddr4->sin_addr.s_addr);
     }
@@ -43,7 +44,7 @@ bool Socket::isSelfConnect(Socket socket) {
 Socket::Socket() : fd_(std::make_shared<const int>(
                         socket(AF_INET, SOCK_STREAM | SOCK_NONBLOCK | SOCK_CLOEXEC, 0))) {
     if(*fd_ == -1) {
-        LOG_ERROR("Create socket failed(err: {})", errnoStr(errno));
+        throw exception::SocketException("Create socket failed", errno);
     }
 }
 Socket::Socket(int fd) : fd_(std::make_shared<const int>(fd)) {}
@@ -72,53 +73,43 @@ int Socket::fd() const {
 void Socket::bind(const InetAddress& addr) {
     auto sa = addr.getSockAddr();
     if(::bind(*fd_, &sa, sizeof sa) == -1) {
-        LOG_FATAL("bind failed(fd: {}, errno: {})", *fd_, errnoStr(errno));
+        throw exception::SocketException("Bind failed(fd: " + std::to_string(*fd_) + ")", errno);
     }
 }
 void Socket::listen() {
     if(::listen(*fd_, SOMAXCONN) == -1) {
-        LOG_FATAL("listen failed(fd: {}, errno: {})", *fd_, errnoStr(errno));
+        throw exception::SocketException("Listen failed(fd: " + std::to_string(*fd_) + ")", errno);
     }
 }
 void Socket::close() {
     shutdownRead();
     shutdownWrite();
 }
-std::optional<int> Socket::accept() {
+Socket Socket::accept() {
     InetAddress peerAddr;
     return accept(peerAddr);
 }
-std::optional<int> Socket::accept(InetAddress& peerAddr) {
+Socket Socket::accept(InetAddress& peerAddr) {
     InetAddress::SockAddr addr;
     socklen_t len;
     int connFd = ::accept4(*fd_, &addr, &len, SOCK_NONBLOCK | SOCK_CLOEXEC);
-    if(connFd == -1) {
-        if(errno == EINTR || errno == EMFILE || errno == ECONNABORTED) {
-            LOG_INFO("accept failed(fd: {}, errno: {})", *fd_, errnoStr(errno));
-        } else if(errno == ENFILE || errno == ENOMEM) {
-            LOG_FATAL("accept failed(fd: {}, errno: {})", *fd_, errnoStr(errno));
-        } else {
-            LOG_ERROR("accept failed(fd: {}, errno: {})", *fd_, errnoStr(errno));
-        }
-        return std::nullopt;
+    if(connFd == -1 && !(errno == EINTR || errno == EMFILE || errno == ECONNABORTED)
+                    && (errno == ENFILE || errno == ENOMEM)) {
+        throw exception::SocketException("Accept failed(fd: " + std::to_string(*fd_) + ")", errno);
     }
     peerAddr.setSockAddr(addr);
     return connFd;
 }
-std::vector<int> Socket::accept(std::vector<InetAddress>& peerAddrs) {
-    std::vector<int> fds;
+std::vector<Socket> Socket::accept(std::vector<InetAddress>& peerAddrs) {
+    std::vector<Socket> fds;
     while(true) {
         InetAddress::SockAddr addr;
         socklen_t len;
         int connFd = ::accept4(*fd_, &addr, &len, SOCK_NONBLOCK | SOCK_CLOEXEC);
         if(connFd == -1) {
-            if(errno == EINTR) {
-            } else if(errno == EMFILE || errno == ECONNABORTED) {
-                LOG_INFO("accept failed(fd: {}, errno: {})", *fd_, errnoStr(errno));
-            } else if(errno == ENFILE || errno == ENOMEM) {
-                LOG_FATAL("accept failed(fd: {}, errno: {})", *fd_, errnoStr(errno));
-            } else {
-                LOG_ERROR("accept failed(fd: {}, errno: {})", *fd_, errnoStr(errno));
+            if(!(errno == EINTR || errno == EMFILE || errno == ECONNABORTED)
+                    && (errno == ENFILE || errno == ENOMEM)) {
+                throw exception::SocketException("Accept failed(fd: " + std::to_string(*fd_) + ")", errno);
             }
             break;
         } else {
@@ -130,13 +121,11 @@ std::vector<int> Socket::accept(std::vector<InetAddress>& peerAddrs) {
     }
     return fds;
 }
-std::optional<int> Socket::connect(const InetAddress& peerAddr) {
+void Socket::connect(const InetAddress& peerAddr) {
     auto& addr = peerAddr.getSockAddr();
     if(::connect(*fd_, &addr, sizeof addr) == -1) {
-        LOG_ERROR("connect failed(fd: {}, errno: {})", *fd_, errnoStr(errno));
-        return errno;
+        throw exception::SocketException("Connect failed(fd: " + std::to_string(*fd_) + ")", errno);
     }
-    return std::nullopt;
 }
 
 std::optional<Socket::TcpInfo> Socket::getTcpInfo() const {
@@ -144,7 +133,7 @@ std::optional<Socket::TcpInfo> Socket::getTcpInfo() const {
     socklen_t len = sizeof info;
     memset(&info, 0, len);
     if(getsockopt(*fd_, SOL_TCP, TCP_INFO, &info, &len) == -1) {
-        LOG_ERROR("getsockopt failed(fd: {}, errno: {})", *fd_, errnoStr(errno));
+        return std::nullopt;
     }
     return info;
 }
@@ -202,11 +191,23 @@ void Socket::setKeepAlive(bool on) {
 }
 
 size_t Socket::write(const void* data, size_t len) {
-    return ::write(*fd_, data, len);
+    size_t bytes = ::write(*fd_, data, len);
+    if(bytes < 0) {
+        throw exception::SocketException("Write error(fd: " + std::to_string(*fd_) + ")", errno);
+    }
+    return bytes;
 }
 size_t Socket::read(void* buf, size_t len) {
-    return ::read(*fd_, buf, len);
+    size_t bytes = ::read(*fd_, buf, len);
+    if(bytes < 0) {
+        throw exception::SocketException("Read error(fd: " + std::to_string(*fd_) + ")", errno);
+    }
+    return bytes;
 }
 size_t Socket::readv(const struct iovec* iov, int iovCount) {
-    return ::readv(*fd_, iov, iovCount);
+    size_t bytes = ::readv(*fd_, iov, iovCount);
+    if(bytes < 0) {
+        throw exception::SocketException("Readv error(fd: " + std::to_string(*fd_) + ")", errno);
+    }
+    return bytes;
 }

@@ -37,6 +37,6 @@ void SyncLogger::append(const std::string& data) {
 }
 
 void SyncLogger::abort() {
-    file_->~FileWriter();
-    abort();
+    file_.reset();
+    ::abort();
 }

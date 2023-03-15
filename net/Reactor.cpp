@@ -45,11 +45,11 @@ Reactor::Reactor(bool useEpoll):
             tid_(std::this_thread::get_id()) {
     if(t_reactorInCurThread) {
         LOG_FATAL("Another Reactor({:p}) exists in this thread({})",
-                    static_cast<void*>(t_reactorInCurThread), tidToStr());
+                    static_cast<void*>(t_reactorInCurThread), tidToStr(tid_));
     } else {
         t_reactorInCurThread = this;
         LOG_DEBUG("Reactor({:p}) created in thread {}",
-                    static_cast<void*>(this), tidToStr());
+                    static_cast<void*>(this), tidToStr(tid_));
     }
     if(useEpoll) {
         poller_ = std::make_unique<EpollPoller>(*this);
@@ -79,9 +79,8 @@ Reactor::~Reactor() {
 }
 
 void Reactor::start() {
-    if(!isInLoopThread()) {
-        LOG_FATAL("Try to do loop({:p}) in another thread", static_cast<void*>(this));
-    }
+    assert();
+
     stop_ = false;
     isLooping_ = true;
     LOG_DEBUG("Reactor({:p}) start looping", static_cast<void*>(this));
@@ -148,8 +147,7 @@ void Reactor::queue(Function func) {
 
 /* 通过eventfd来唤醒poll */
 void Reactor::wakeup() {
-    int ret = eventfd_write(wakeupFd_, 1);
-    if(ret == -1) {
+    if(eventfd_write(wakeupFd_, 1) == -1) {
         LOG_ERROR("Failed to write eventfd({})", errnoStr(errno));
     }
 }
@@ -173,12 +171,17 @@ void Reactor::removeEvent(Event& event) {
 bool Reactor::isInLoopThread() const {
     return tid_ == std::this_thread::get_id();
 }
+void Reactor::assert() const {
+    if(!(tid_ == std::this_thread::get_id())) {
+        LOG_FATAL("Reactor({}) called by another thread({})", tidToStr(tid_), tidToStr(std::this_thread::get_id()));
+    }
+}
 bool Reactor::isLooping() const { return isLooping_; }
 int Reactor::numOfEvents() { numOfEvents_ = activeEvents_.size(); return numOfEvents_; }
 
-std::string Reactor::tidToStr() const {
+std::string Reactor::tidToStr(std::thread::id tid) const {
     std::stringstream ss;
-    ss << tid_;
+    ss << tid;
     std::string tidStr = ss.str();
     tidStr = tidStr.substr(tidStr.length() - 4, 4);
     return tidStr;

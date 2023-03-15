@@ -38,13 +38,13 @@ public:
     void close();
     /* 每次accept一个连接，适合长连接服务 */
     [[nodiscard]]
-    std::optional<int> accept(InetAddress&);
+    Socket accept(InetAddress&);
     [[nodiscard]]
-    std::optional<int> accept();
+    Socket accept();
     /* 每次accept若干个连接，适合短连接服务 */
     [[nodiscard]]
-    std::vector<int> accept(std::vector<InetAddress>&);
-    std::optional<int> connect(const InetAddress&);
+    std::vector<Socket> accept(std::vector<InetAddress>&);
+    void connect(const InetAddress&);
 
     std::optional<TcpInfo> getTcpInfo() const;
     std::string getTcpInfoString() const;
@@ -57,7 +57,7 @@ public:
     void setReusePort(bool);
     void setKeepAlive(bool);
 
-    // 不建议直接使用以下接口，用于内部使用
+    // 不建议直接使用以下接口
     size_t write(const void*, size_t);
     size_t read(void*, size_t);
     size_t readv(const struct iovec*, int);
