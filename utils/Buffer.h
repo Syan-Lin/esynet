@@ -48,9 +48,10 @@ public:
     const char* data() const { return data_; }
     std::string toString() { return std::string(data(), length()); }
 
-    size_t length() const { return cur_ - data_; }
-    size_t capacity() const { return SIZE; }
-    size_t remain() const { return data_ + sizeof(data_) - cur_; }
+    bool empty()        const { return cur_ == data_; }
+    size_t length()     const { return cur_ - data_; }
+    size_t capacity()   const { return SIZE; }
+    size_t remain()     const { return data_ + sizeof(data_) - cur_; }
 
     void reset() { cur_ = data_; }
     void bzero() { ::bzero(data_, sizeof(data_)); }

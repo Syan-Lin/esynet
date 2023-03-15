@@ -9,8 +9,6 @@
 using namespace esynet;
 using namespace esynet::utils;
 
-#include <dbg.h>
-
 TEST_CASE("InetAddress_Test"){
     InetAddress addr(8888);
     InetAddress addr2("127.0.0.1", 7777);
@@ -34,7 +32,7 @@ TEST_CASE("Socket_Test"){
         sleep(1);
         Socket client;
         InetAddress addr("127.0.0.1", 8888);
-        client.connect(addr);
+        auto ret = client.connect(addr);
     });
 
     Socket sock;
@@ -47,7 +45,7 @@ TEST_CASE("Socket_Test"){
     sock.bind(local);
     sock.listen();
     InetAddress peerAddr(-1);
-    sock.accept(peerAddr);
+    auto ret = sock.accept(peerAddr);
     CHECK(peerAddr.ip() == "0.0.0.0");
     CHECK(peerAddr.port() == 8888);
 

@@ -37,9 +37,12 @@ public:
     // 立刻执行shutdown操作，但真正关闭会延迟到计数归零
     void close();
     /* 每次accept一个连接，适合长连接服务 */
+    [[nodiscard]]
     std::optional<int> accept(InetAddress&);
+    [[nodiscard]]
     std::optional<int> accept();
     /* 每次accept若干个连接，适合短连接服务 */
+    [[nodiscard]]
     std::vector<int> accept(std::vector<InetAddress>&);
     std::optional<int> connect(const InetAddress&);
 

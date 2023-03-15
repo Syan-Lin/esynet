@@ -8,12 +8,12 @@ using esynet::logger::AsyncLogger;
 using esynet::utils::FileWriter;
 using esynet::utils::Timestamp;
 
-AsyncLogger::AsyncLogger(std::filesystem::path path, int flushInterval):
+AsyncLogger::AsyncLogger(std::filesystem::path path, int flushIntervalSeconds):
         file_(new FileWriter(std::filesystem::current_path()/path)),
-        flushInterval_(flushInterval)  {
-    buffer_ = std::make_unique<Buffer>();
-    backupBuffer_ = std::make_unique<Buffer>();
-    running_ = false;
+        flushInterval_(flushIntervalSeconds),
+        running_(false) {
+    bufferForLog_ = std::make_unique<Buffer>();
+    bufferForWrite_ = std::make_unique<Buffer>();
 }
 
 AsyncLogger::~AsyncLogger() {
@@ -31,36 +31,59 @@ void AsyncLogger::start() {
 }
 
 void AsyncLogger::stop() {
+    if(!running_) return;
     running_ = false;
     cond_.notify_one();
     thread_.join();
 }
 
 void AsyncLogger::append(const std::string& data) {
-    std::unique_lock<std::mutex> lock(mutex_);
-    if(data.size() > buffer_->capacity()) {
+    if(data.size() > bufferForLog_->capacity()) {
         std::cerr << "Dropped buffer" << std::endl;
         return;
     }
 
-    if(buffer_->remain() > data.size()) {
-        buffer_->append(data);
+    std::unique_lock<std::mutex> lock(mutex_);
+    if(bufferForLog_->remain() > data.size()) {
+        bufferForLog_->append(data);
     } else {
-        buffers_.push(std::move(buffer_));
-        if(backupBuffer_) {
-            buffer_ = std::move(backupBuffer_);     /* 使用备用缓冲区 */
+        if(std::unique_lock<std::mutex> lock(extraMutex_); bufferForWrite_->empty()) {
+            std::swap(bufferForLog_, bufferForWrite_);
+        } else if(extraBuffers_.size() <= 64) {
+            // 数据来不及写入，创建一个新的缓冲区
+            extraBuffers_.push(std::move(bufferForLog_));
+            bufferForLog_ = std::make_unique<Buffer>();
+            bufferForLog_->append(data);
+            cond_.notify_one();
         } else {
-            buffer_ = std::make_unique<Buffer>();   /* 创建新缓冲区 */
+            std::cerr << "Too many buffer, drop some" << std::endl;
         }
-        buffer_->append(data);
-        cond_.notify_one();
+    }
+}
+
+void AsyncLogger::writeToFile() {
+    BufferQueue bufferToWrite;
+    while(running_) {
+        {
+            std::unique_lock<std::mutex> lock(mutex_);
+            bool available = !extraBuffers_.empty() || !bufferForWrite_->empty();
+            if(!available) {
+                cond_.wait_for(lock, std::chrono::seconds(flushInterval_));
+            }
+            if(bufferForWrite_->empty()) {
+                std::swap(bufferForLog_, bufferForWrite_);
+            }
+            if(!extraBuffers_.empty()) {
+                bufferToWrite = std::move(extraBuffers_);
+            }
+        }
+        flush(bufferToWrite);
     }
 }
 
 /* 将缓冲队列写入文件，并重置备用缓冲区 */
-void AsyncLogger::flush(BufferQueue& data) {
-    while(!data.empty()) {
-        auto& buffer = data.front();
+void AsyncLogger::flush(BufferQueue& buffers) {
+    auto write = [this](Buffer& buffer){
         if(file_->filesize() == 0) {
             file_->append(Logger::gHeader.c_str(), Logger::gHeader.size());
         } else if(file_->filesize() > Logger::gMaxFileSize) {
@@ -69,39 +92,21 @@ void AsyncLogger::flush(BufferQueue& data) {
             file_.reset(new FileWriter(std::filesystem::current_path(), "log.log"));
             file_->append(Logger::gHeader.c_str(), Logger::gHeader.size());
         }
-        file_->append(buffer->data(), buffer->length());
-        /* 队列中只有一个缓冲区用于补充，其余丢弃 */
-        if(!backupBuffer_) {
-            buffer->reset();
-            backupBuffer_ = std::move(buffer);  /* 补充备用缓冲区 */
-        }
-        data.pop();
+        file_->append(buffer.data(), buffer.length());
+        buffer.reset();
+    };
+
+    if(std::unique_lock<std::mutex> lock(extraMutex_); !bufferForWrite_->empty()) {
+        write(*bufferForWrite_);
+    }
+    while(!buffers.empty()) {
+        write(*buffers.front());
+        buffers.pop();
     }
 }
 
-void AsyncLogger::writeToFile() {
-    BufferQueue buffersToWrite;
-    while(running_) {
-        {
-            std::unique_lock<std::mutex> lock(mutex_);
-
-            bool available = buffers_.size() > 0;
-            if(!available) {
-                cond_.wait_for(lock, std::chrono::seconds(flushInterval_));
-            }
-            while(buffers_.size() > 64) {
-                std::cerr << "Too many buffer, drop some" << std::endl;
-                buffers_.pop();
-            }
-            if(backupBuffer_) {
-                /* 未使用备用缓冲区，数据在缓冲区上 */
-                buffersToWrite.push(std::move(buffer_));
-                buffer_ = std::move(backupBuffer_);
-            } else {
-                /* 缓冲区数据已移入队列，获取数据 */
-                buffersToWrite = std::move(buffers_);
-            }
-        }
-        flush(buffersToWrite);
-    }
+void AsyncLogger::abort() {
+    stop();
+    file_->~FileWriter();
+    abort();
 }

@@ -70,69 +70,66 @@ Reactor& TcpConnection::reactor() const {
 }
 
 void TcpConnection::send(const void* data, size_t len) {
-    if (state_ == kConnected) {
-        reactor_.run([&]{
-            size_t wrote = 0;
-            bool fault = false;
+    if (state_ != kConnected) return;
+    reactor_.run([&] {
+        size_t wrote = 0;
+        bool fault = false;
 
-            // 如果不在写状态，且输出缓冲区为空，则直接写入
-            if(!event_.writable() && outputBuffer_.readableBytes() == 0) {
-                wrote = socket_.write(data, len);
-                if(wrote >= 0) {
-                    len -= wrote;
-                    // 完成写入，将回调入列
-                    if(len == 0 && writeCompleteCb_) {
-                        reactor_.queue([this] {
-                            writeCompleteCb_(*this);
-                        });
-                    }
-                } else {
-                    // 写入出错
-                    wrote = 0;
-                    if(errno != EWOULDBLOCK &&
-                            (errno == EPIPE || errno == ECONNRESET)) {
-                        LOG_ERROR("sendImplement failed(fd: {}, errno: {})", socket_.fd(), strerror(errno));
-                        fault = true;
-                    }
-                }
-            }
-
-            if(!fault && len > 0) {
-                size_t remain = outputBuffer_.readableBytes();
-                if(remain + len >= highWaterMark_ && highWaterMarkCb_) {
-                    // 囤积数据过多
+        // 如果不在写状态，且输出缓冲区为空，则直接写入
+        if(!event_.writable() && outputBuffer_.readableBytes() == 0) {
+            wrote = socket_.write(data, len);
+            if(wrote >= 0) {
+                len -= wrote;
+                // 完成写入，将回调入列
+                if(len == 0 && writeCompleteCb_) {
                     reactor_.queue([this] {
-                        highWaterMarkCb_(*this, outputBuffer_.readableBytes());
+                        writeCompleteCb_(*this);
                     });
                 }
-                outputBuffer_.append(static_cast<const char*>(data) + wrote, len);
-                if(!event_.writable()) {
-                    event_.enableWrite();
+            } else {
+                // 写入出错
+                wrote = 0;
+                if(errno != EWOULDBLOCK &&
+                        (errno == EPIPE || errno == ECONNRESET)) {
+                    LOG_ERROR("sendImplement failed(fd: {}, errno: {})", socket_.fd(), strerror(errno));
+                    fault = true;
                 }
             }
-        });
-    }
+        }
+
+        if(!fault && len > 0) {
+            size_t remain = outputBuffer_.readableBytes();
+            if(remain + len >= highWaterMark_ && highWaterMarkCb_) {
+                // 囤积数据过多
+                reactor_.queue([this] {
+                    highWaterMarkCb_(*this, outputBuffer_.readableBytes());
+                });
+            }
+            outputBuffer_.append(static_cast<const char*>(data) + wrote, len);
+            if(!event_.writable()) {
+                event_.enableWrite();
+            }
+        }
+    });
 }
 void TcpConnection::send(const utils::StringPiece msg) {
     send(msg.data(), msg.size());
 }
 void TcpConnection::shutdown() {
-    if (state_ == kConnected) {
-        state_ = kDisconnecting;
-        reactor_.run([this] {
-            if(!event_.writable()) {
-                socket_.shutdownWrite();
-            }
-        });
-    }
+    if (state_ != kConnected) return;
+    state_ = kDisconnecting;
+    reactor_.run([this] {
+        if(!event_.writable()) {
+            socket_.shutdownWrite();
+        }
+    });
 }
 void TcpConnection::close() {
-    if (state_ == kConnected || state_ == kDisconnecting) {
-        state_ = kDisconnecting;
-        reactor_.run([this] {
-            handleClose();
-        });
-    }
+    if (state_ == kConnecting || state_ == kDisconnected) return;
+    state_ = kDisconnecting;
+    reactor_.run([this] {
+        handleClose();
+    });
 }
 void TcpConnection::setTcpNoDelay(bool on) {
     socket_.setTcpNoDelay(on);

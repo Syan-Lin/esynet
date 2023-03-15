@@ -12,61 +12,55 @@
 namespace esynet {
 
 class Reactor;
+class Connector;
 
-class TcpServer : public utils::NonCopyable {
+class TcpClient : public utils::NonCopyable {
 private:
     using TcpConnectionPtr      = TcpConnection::TcpConnectionPtr;
-    using ConnectionMap         = std::map<std::string, TcpConnectionPtr>;
-
+    using ConnectorPtr          = std::unique_ptr<Connector>;
     using ConnectionCallback    = TcpConnection::ConnectionCallback;
     using WriteCompleteCallback = TcpConnection::WriteCompleteCallback;
     using MessageCallback       = TcpConnection::MessageCallback;
-    using ThreadInitCallback    = std::function<void(Reactor&)>;
 
 public:
-    enum Strategy { kRoundRobin, kLightest };
+    TcpClient(Reactor&, InetAddress addr = 8080, utils::StringPiece name = "Server");
+    ~TcpClient();
 
-public:
-    TcpServer(Reactor&, InetAddress addr = 8080, utils::StringPiece name = "Server");
-    ~TcpServer();
+    void connect();
+    void disconnect();
+    void stop();
+    void enableRetry();
 
-    const std::string&  ip() const;
+    TcpConnectionPtr    connection() const;
+    Reactor&            reactor() const;
     const std::string&  name() const;
-    int                 port() const;
-    Reactor&            reactor();
+    void                willRetry() const;
 
     /* 非线程安全 */
     void setConnectionCallback(const ConnectionCallback&);
     void setMessageCallback(const MessageCallback&);
     void setWriteCompleteCallback(const WriteCompleteCallback&);
-    void setThreadInitCallback(const ThreadInitCallback&);
-    void setThreadNumInPool(size_t numThreads = 0);
-
-    ReactorThreadPoll& threadPoll();
-    void setThreadPollStrategy(Strategy strategy);
 
     void start(); /* 线程安全，开始监听 */
 
 private:
-    void onConnection(Socket, const InetAddress&);
-    void removeConnection(TcpConnection& conn);
+    void onConnection(Socket);
+    void removeConnection(TcpConnection&);
 
     Reactor& reactor_;
-    const int port_;
-    const std::string ip_;
-    const std::string name_;
-    std::atomic<bool> started_;
-
-    Acceptor acceptor_;
-    ReactorThreadPoll threadPoll_;
-    Strategy strategy_ = kRoundRobin;
+    ConnectorPtr connector_;
+    TcpConnectionPtr connection_;
 
     ConnectionCallback connectionCb_;
-    WriteCompleteCallback writeCompleteCb_;
     MessageCallback messageCb_;
+    WriteCompleteCallback writeCompleteCb_;
 
+    const std::string name_;
+    bool retry_;
+    bool tryToConnect_;
     int nextConnId_;
-    ConnectionMap connections_;
+
+    std::mutex mutex_;
 };
 
 } /* namespace esynet */

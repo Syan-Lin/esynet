@@ -28,7 +28,7 @@ TEST_CASE("InetAddress_Test"){
     InetAddress ad("0.0.0.0", 4567);
     InetAddress local("0.0.0.0", 12345);
     sock3.bind(local);
-    sock3.connect(ad);
+    auto ret = sock3.connect(ad);
     auto addr4 = InetAddress::getLocalAddr(sock3);
     CHECK(addr4.has_value());
     CHECK(addr4->ip() == "127.0.0.1");

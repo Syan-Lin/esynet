@@ -25,11 +25,12 @@ private:
     enum State { kDisconnected, kConnecting, kConnected, kDisconnecting };
 
 public:
-    using TcpConnectionPtr = std::shared_ptr<TcpConnection>;
-    using ConnectionCallback = std::function<void(TcpConnection&)>;
-    using CloseCallback = ConnectionCallback;
+    using TcpConnectionPtr      = std::shared_ptr<TcpConnection>;
+    using ConnectionCallback    = std::function<void(TcpConnection&)>;
+
+    using CloseCallback         = ConnectionCallback;
     using WriteCompleteCallback = ConnectionCallback;
-    using MessageCallback = std::function<void(TcpConnection&, utils::Buffer&, utils::Timestamp)>;
+    using MessageCallback       = std::function<void(TcpConnection&, utils::Buffer&, utils::Timestamp)>;
     using HighWaterMarkCallback = std::function<void(TcpConnection&, size_t)>;
 
 public:
@@ -38,7 +39,7 @@ public:
 
 public:
     TcpConnection(Reactor&, utils::StringPiece, Socket,
-                    const InetAddress&, const InetAddress&);
+                    const InetAddress& local, const InetAddress& peer);
     ~TcpConnection();
 
     /* 状态相关 */

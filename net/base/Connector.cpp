@@ -7,6 +7,8 @@
 #include "utils/ErrorInfo.h"
 
 using esynet::Connector;
+const int Connector::kMaxRetryDelayMs;
+const int Connector::kInitRetryDelayMs;
 
 Connector::Connector(Reactor& reactor, const InetAddress& serverAddr):
                     reactor_(reactor),
@@ -27,7 +29,7 @@ void Connector::start() {
             tryToConnect_ = true;
             Socket socket;
             auto ret = socket.connect(serverAddr_);
-            if(!ret.has_value()) {
+            if(ret.has_value()) {
                 checkConnect(socket);
             } else {
                 switch (ret.value()) {
@@ -99,7 +101,7 @@ void Connector::checkConnect(Socket socket) {
                 retry(socket);
             } else {
                 // 连接成功
-                OnConnection(socket);
+                onConnection(socket);
             }
         }
     });
@@ -116,7 +118,7 @@ void Connector::checkConnect(Socket socket) {
     event_->enableWrite();
 }
 
-void Connector::OnConnection(Socket socket) {
+void Connector::onConnection(Socket socket) {
     state_ = kConnected;
     if (tryToConnect_) {
         connCb_(socket);

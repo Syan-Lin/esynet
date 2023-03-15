@@ -15,7 +15,7 @@ Acceptor::Acceptor(Reactor& reactor, const InetAddress& localAddr):
     acceptSocket_.setReuseAddr(true);
     acceptSocket_.setReusePort(true);
     acceptSocket_.bind(localAddr);
-    acceptEvent_.setReadCallback(std::bind(&Acceptor::OnConnection, this));
+    acceptEvent_.setReadCallback(std::bind(&Acceptor::onConnection, this));
 }
 
 Acceptor::~Acceptor() {
@@ -37,7 +37,7 @@ void Acceptor::listen() {
     acceptEvent_.enableRead();
 }
 
-void Acceptor::OnConnection() {
+void Acceptor::onConnection() {
     if(!reactor_.isInLoopThread()) {
         LOG_FATAL("Call OnConnection() in another thread: reactor({:p})", static_cast<void*>(this));
     }

@@ -20,6 +20,7 @@ const std::string       Logger::gHeader      = "Date       Time            Tid  
 const int               Logger::gMaxFileSize = 100_MB;
 fmt::string_view        Logger::gFormat      = "{:10} {:15} {:4} {:5} {:15} {:20} {:<5} {}\n";
 Logger::BackEndFunction Logger::gSubmitLog   = std::bind(logToConsole, std::placeholders::_1);
+Logger::FlushFunction   Logger::gAbort       = []{};
 const Logger::StrMap    Logger::gLogName     = {
     {Logger::NONE, "None"},
     {Logger::DEBUG, "Debug"},

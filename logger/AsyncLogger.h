@@ -20,12 +20,14 @@ public:
     using BufferQueue = std::queue<BufferPtr>;
 
 public:
-    AsyncLogger(std::filesystem::path, int flushInterval = 3);
+    AsyncLogger(std::filesystem::path, int flushIntervalSeconds = 3);
     ~AsyncLogger();
 
     void start();
     void stop();
     void append(const std::string&);
+
+    void abort();
 
 private:
     void flush(BufferQueue&);
@@ -34,13 +36,14 @@ private:
 private:
     const int flushInterval_;
     std::mutex mutex_;
+    std::mutex extraMutex_;
     std::thread thread_;
     std::atomic<bool> running_;
     std::condition_variable cond_;
     std::unique_ptr<utils::FileWriter> file_;
-    BufferPtr buffer_;                  /* 当前缓冲区 */
-    BufferPtr backupBuffer_;            /* 备用缓冲区 */
-    BufferQueue buffers_;               /* 将要写入文件的缓存 */
+    BufferPtr bufferForLog_;            /* log 写入缓冲区 */
+    BufferPtr bufferForWrite_;          /* 写入文件缓冲区 */
+    BufferQueue extraBuffers_;          /* 面对突发大数据的缓冲区 */
 };
 
 } /* namespace esynet::logger */

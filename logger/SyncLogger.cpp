@@ -35,3 +35,8 @@ void SyncLogger::append(const std::string& data) {
     }
     file_->append(data.c_str(), data.size());
 }
+
+void SyncLogger::abort() {
+    file_->~FileWriter();
+    abort();
+}

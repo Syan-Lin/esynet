@@ -39,7 +39,7 @@ public:
     const InetAddress& serverAddr() const;
 
 private:
-    void OnConnection(Socket);
+    void onConnection(Socket);
     void checkConnect(Socket);
     void retry(Socket);
 

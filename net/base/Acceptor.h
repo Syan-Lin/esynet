@@ -28,7 +28,7 @@ public:
     void listen();
 
 private:
-    void OnConnection();
+    void onConnection();
 
     Reactor& reactor_;
     Socket acceptSocket_;

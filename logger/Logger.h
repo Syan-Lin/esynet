@@ -30,6 +30,7 @@ class Logger {
 public:
     enum LogLevel { NONE, DEBUG, INFO, WARN, ERROR, FATAL, };
     using BackEndFunction = std::function<void(const std::string& msg)>;
+    using FlushFunction = std::function<void()>;
     using StrMap = std::unordered_map<LogLevel, std::string>;
 
     /* Logger 配置 */
@@ -45,12 +46,18 @@ public:
     static void setLogger(LogBackEnd& logger, typename std::enable_if<
                         std::is_same<LogBackEnd, logger::SyncLogger>::value ||
                         std::is_same<LogBackEnd, logger::AsyncLogger>::value>::type* = 0) {
-        gSubmitLog = std::bind(&LogBackEnd::append, &logger, std::placeholders::_1);
+        gSubmitLog = [&logger](const std::string& msg){
+            logger.append(msg);
+        };
+        gAbort = [&logger]{
+            logger.abort();
+        };
     }
 
 private:
     using Timestamp = utils::Timestamp;
     static BackEndFunction gSubmitLog;
+    static FlushFunction gAbort;
     static const StrMap gLogName;
     const std::string& levelToString(LogLevel level) const;
 
@@ -59,7 +66,7 @@ public:
 
     /* 模板函数，必须放在头文件中 */
     template<typename... ARGS>
-    void log(const char* fmt, ARGS&&... args) {
+    void log(const char* fmt, ARGS&&... args) const {
         using namespace fmt;
         if(level_ < gLogLevel) return;
 
@@ -81,6 +88,8 @@ public:
                                     ));
         /* 交由后端写入文件 */
         gSubmitLog(log_info);
+
+        if(level_ == FATAL) gAbort();
     }
 
 private:
@@ -102,4 +111,4 @@ private:
 #define LOG_INFO(fmt, ...)  Logger(__FILE__, __LINE__, __func__, Logger::LogLevel::INFO ).log(fmt, ##__VA_ARGS__)
 #define LOG_WARN(fmt, ...)  Logger(__FILE__, __LINE__, __func__, Logger::LogLevel::WARN ).log(fmt, ##__VA_ARGS__)
 #define LOG_ERROR(fmt, ...) Logger(__FILE__, __LINE__, __func__, Logger::LogLevel::ERROR).log(fmt, ##__VA_ARGS__)
-#define LOG_FATAL(fmt, ...) Logger(__FILE__, __LINE__, __func__, Logger::LogLevel::FATAL).log(fmt, ##__VA_ARGS__);abort()
+#define LOG_FATAL(fmt, ...) Logger(__FILE__, __LINE__, __func__, Logger::LogLevel::FATAL).log(fmt, ##__VA_ARGS__)

@@ -18,6 +18,8 @@ public:
 
     void append(const std::string&);
 
+    void abort();
+
 private:
     std::mutex mutex_;
     std::unique_ptr<utils::FileWriter> file_;

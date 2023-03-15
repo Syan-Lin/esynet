@@ -2,7 +2,6 @@
 
 /* Local headers */
 #include "net/Reactor.h"
-#include "net/Event.h"
 
 /* Standard headers */
 #include <functional>
@@ -23,7 +22,7 @@ TcpServer::TcpServer(Reactor& reactor, InetAddress addr, utils::StringPiece name
     connectionCb_ = TcpConnection::defaultConnectionCallback;
     messageCb_ = TcpConnection::defaultMessageCallback;
     acceptor_.setConnectionCallback(std::bind(
-        &TcpServer::OnConnection, this, std::placeholders::_1, std::placeholders::_2));
+        &TcpServer::onConnection, this, std::placeholders::_1, std::placeholders::_2));
 }
 
 TcpServer::~TcpServer() {
@@ -77,7 +76,7 @@ void TcpServer::setThreadPollStrategy(Strategy strategy) {
     strategy_ = strategy;
 }
 
-void TcpServer::OnConnection(Socket socket, const InetAddress& peerAddr) {
+void TcpServer::onConnection(Socket socket, const InetAddress& peerAddr) {
     if(!reactor_.isInLoopThread()) {
         LOG_FATAL("TcpServer OnConnection in another thread(reactor: {:p})",
                     static_cast<void*>(&reactor_));
