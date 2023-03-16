@@ -3,12 +3,15 @@
 /* Local headers */
 #include "logger/Logger.h"
 #include "net/base/InetAddress.h"
-#include "net/Reactor.h"
+#include "net/base/Reactor.h"
 #include "exception/SocketException.h"
 
 using esynet::TcpConnection;
 using esynet::InetAddress;
 using esynet::Reactor;
+using std::optional;
+using TcpInfo = esynet::Socket::TcpInfo;
+using esynet::utils::Buffer;
 
 void TcpConnection::defaultConnectionCallback(TcpConnection& conn) {
     LOG_DEBUG("Connection from {}:{}", conn.peerAddress().ip());
@@ -54,82 +57,93 @@ TcpConnection::TcpConnection(Reactor& reactor,
 
     event_.setReadCallback(std::bind(&TcpConnection::handleRead, this));
     event_.setWriteCallback(std::bind(&TcpConnection::handleWrite, this));
-    event_.setCloseCallback(std::bind(&TcpConnection::handleClose, this));
-    event_.setErrorCallback(std::bind(&TcpConnection::handleError, this));
+    event_.setCloseCallback(std::bind(&TcpConnection::disconnectComplete, this));
+    event_.setErrorCallback([this] {
+        errorCb_(*this);
+    });
     socket_.setKeepAlive(true);
 }
 TcpConnection::~TcpConnection() {}
 
-const std::string& TcpConnection::name() const { return name_; }
+const std::string& TcpConnection::name()         const { return name_; }
+Reactor&           TcpConnection::reactor()      const { return reactor_; }
+optional<TcpInfo>  TcpConnection::tcpInfo()      const { return socket_.getTcpInfo(); }
+bool               TcpConnection::connected()    const { return state_ == kConnected; }
+std::string        TcpConnection::tcpInfoStr()   const { return socket_.getTcpInfoString(); }
+const InetAddress& TcpConnection::peerAddress()  const { return peerAddr_; }
 const InetAddress& TcpConnection::localAddress() const { return localAddr_; }
-const InetAddress& TcpConnection::peerAddress() const { return peerAddr_; }
-bool TcpConnection::connected() const { return state_ == kConnected; }
-bool TcpConnection::disconnected() const { return state_ == kDisconnected; }
-std::optional<TcpConnection::TcpInfo>TcpConnection::tcpInfo() const { return socket_.getTcpInfo(); }
-std::string TcpConnection::tcpInfoStr() const { return socket_.getTcpInfoString(); }
-Reactor& TcpConnection::reactor() const { return reactor_; }
+bool               TcpConnection::disconnected() const { return state_ == kDisconnected; }
+const std::any&    TcpConnection::getContext()   const { return context_; }
+Buffer&            TcpConnection::readBuffer() { return readBuffer_; }
+Buffer&            TcpConnection::sendBuffer() { return sendBuffer_; }
 
+void TcpConnection::setTcpNoDelay(bool on)                                    { socket_.setTcpNoDelay(on); }
+void TcpConnection::setContext(const std::any& context)                       { context_ = context; }
+void TcpConnection::setConnectionCallback(const ConnectionCallback& cb)       { connectionCb_    = cb; }
+void TcpConnection::setMessageCallback(const MessageCallback& cb)             { messageCb_       = cb; }
+void TcpConnection::setWriteCompleteCallback(const WriteCompleteCallback& cb) { writeCompleteCb_ = cb; }
+void TcpConnection::setCloseCallback(const CloseCallback& cb)                 { closeCb_         = cb; }
+void TcpConnection::setErrorCallback(const ErrorCallback& cb)                 { errorCb_         = cb; }
+void TcpConnection::setHighWaterMarkCallback(const HighWaterMarkCallback& cb, size_t mark) {
+    highWaterMarkCb_ = cb;
+    highWaterMark_   = mark;
+}
+
+void TcpConnection::send(const utils::StringPiece msg) {
+    send(msg.data(), msg.size());
+}
 void TcpConnection::send(const void* data, size_t len) {
     if (state_ != kConnected) return;
     reactor_.run([&] {
         size_t wrote = 0;
-        bool fault = false;
+        bool error = false;
 
-        // 如果不在写状态，且输出缓冲区为空，则直接写入
-        if(!event_.writable() && outputBuffer_.readableBytes() == 0) {
+        bool isFirstSend = !event_.writable() && sendBuffer_.readableBytes() == 0;
+        if(isFirstSend) {
             try {
                 wrote = socket_.write(data, len);
                 len -= wrote;
-                // 完成写入，将回调入列
                 if(len == 0 && writeCompleteCb_) {
-                    reactor_.queue([this] {
-                        writeCompleteCb_(*this);
-                    });
+                    writeCompleteCb_(*this);
                 }
             } catch(exception::SocketException& e) {
-                if(errno != EWOULDBLOCK &&
-                        (errno == EPIPE || errno == ECONNRESET)) {
-                    LOG_ERROR("sendImplement failed(fd: {}, errno: {})", socket_.fd(), strerror(errno));
-                    fault = true;
+                if(errno != EWOULDBLOCK && (errno == EPIPE || errno == ECONNRESET)) {
+                    LOG_ERROR("{}", e.detail());
+                    error = true;
                 }
             }
         }
 
-        if(!fault && len > 0) {
-            size_t remain = outputBuffer_.readableBytes();
-            if(remain + len >= highWaterMark_ && highWaterMarkCb_) {
-                // 囤积数据过多
-                reactor_.queue([this] {
-                    highWaterMarkCb_(*this, outputBuffer_.readableBytes());
-                });
+        if(!error && len > 0) {
+            size_t dataInBuffer = sendBuffer_.readableBytes();
+            if(dataInBuffer + len >= highWaterMark_ && highWaterMarkCb_) {
+                highWaterMarkCb_(*this, sendBuffer_.readableBytes());
             }
-            outputBuffer_.append(static_cast<const char*>(data) + wrote, len);
+            sendBuffer_.append(static_cast<const char*>(data) + wrote, len);
             if(!event_.writable()) {
                 event_.enableWrite();
             }
         }
     });
 }
-void TcpConnection::send(const utils::StringPiece msg) {
-    send(msg.data(), msg.size());
-}
+
 void TcpConnection::shutdown() {
     if (state_ != kConnected) return;
     state_ = kDisconnecting;
     reactor_.run([this] {
-        if(event_.writable()) return;
+        if(event_.writable()) {
+            LOG_WARN("Try to shutdown while data has not been send");
+            return;
+        }
         socket_.shutdownWrite();
     });
 }
-void TcpConnection::close() {
+void TcpConnection::forceClose() {
     if (state_ == kConnecting || state_ == kDisconnected) return;
     state_ = kDisconnecting;
     reactor_.run([this] {
-        handleClose();
+        disconnectComplete();
     });
-}
-void TcpConnection::setTcpNoDelay(bool on) {
-    socket_.setTcpNoDelay(on);
 }
 void TcpConnection::enableRead() {
     reactor_.run([this] {
@@ -139,43 +153,12 @@ void TcpConnection::enableRead() {
 }
 void TcpConnection::disableRead() {
     reactor_.run([this] {
-        if(!event_.readable()) return;
+        if(!event_.readable()) {
+            LOG_WARN("Try to disable read while data has not been read");
+            return;
+        }
         event_.disableRead();
     });
-}
-
-void TcpConnection::setContext(const std::any& context) {
-    context_ = context;
-}
-const std::any& TcpConnection::getContext() const {
-    return context_;
-}
-
-void TcpConnection::setConnectionCallback(const ConnectionCallback& cb) {
-    connectionCb_ = cb;
-}
-void TcpConnection::setMessageCallback(const MessageCallback& cb) {
-    messageCb_ = cb;
-}
-void TcpConnection::setWriteCompleteCallback(const WriteCompleteCallback& cb) {
-    writeCompleteCb_ = cb;
-}
-void TcpConnection::setHighWaterMarkCallback(const HighWaterMarkCallback& cb, size_t mark) {
-    highWaterMarkCb_ = cb;
-    highWaterMark_ = mark;
-}
-void TcpConnection::setCloseCallback(const CloseCallback& cb) {
-    closeCb_ = cb;
-}
-void TcpConnection::setErrorCallback(const ErrorCallback& cb) {
-    errorCb_ = cb;
-}
-
-esynet::utils::Buffer& TcpConnection::inputBuffer() {
-    return inputBuffer_;
-}
-esynet::utils::Buffer& TcpConnection::outputBuffer() {
-    return outputBuffer_;
 }
 
 void TcpConnection::connectComplete() {
@@ -187,21 +170,22 @@ void TcpConnection::disconnectComplete() {
     state_ = kDisconnected;
     event_.disableAll();
     reactor_.removeEvent(event_);
+    closeCb_(*this);
 }
 
 void TcpConnection::handleRead() {
     reactor_.assert();
 
     try {
-        ssize_t bytes = inputBuffer_.readSocket(socket_);
+        ssize_t bytes = readBuffer_.readSocket(socket_);
         if(bytes > 0) {
-            messageCb_(*this, inputBuffer_, utils::Timestamp::now());
+            messageCb_(*this, readBuffer_, utils::Timestamp::now());
         } else {
-            handleClose();
+            disconnectComplete();
         }
     } catch(exception::SocketException& e) {
         LOG_ERROR("{}", e.detail());
-        handleError();
+        errorCb_(*this);
     }
 }
 // 当send函数一次发不完时，会注册监听可写事件，在可写时执行该函数继续发送
@@ -210,9 +194,9 @@ void TcpConnection::handleWrite() {
 
     if(event_.writable()) {
         try {
-            ssize_t bytes = socket_.write(outputBuffer_.beginRead(), outputBuffer_.readableBytes());
-            outputBuffer_.retrieve(bytes);
-            if(outputBuffer_.readableBytes() == 0) {
+            ssize_t bytes = socket_.write(sendBuffer_.beginRead(), sendBuffer_.readableBytes());
+            sendBuffer_.retrieve(bytes);
+            if(sendBuffer_.readableBytes() == 0) {
                 event_.disableWrite();
                 if(writeCompleteCb_) {
                     reactor_.queue([this] {
@@ -229,10 +213,4 @@ void TcpConnection::handleWrite() {
     } else {
         LOG_ERROR("TcpConnection::handleWrite() can't write");
     }
-}
-void TcpConnection::handleClose() {
-    closeCb_(*this);
-}
-void TcpConnection::handleError() {
-    errorCb_(*this);
 }

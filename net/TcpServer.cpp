@@ -1,7 +1,7 @@
 #include "net/TcpServer.h"
 
 /* Local headers */
-#include "net/Reactor.h"
+#include "net/base/Reactor.h"
 
 /* Standard headers */
 #include <functional>

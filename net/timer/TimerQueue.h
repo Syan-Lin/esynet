@@ -6,7 +6,7 @@
 
 /* Local headers */
 #include "net/timer/Timer.h"
-#include "net/Event.h"
+#include "net/base/Event.h"
 
 namespace esynet::timer {
 

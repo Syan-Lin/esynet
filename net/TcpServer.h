@@ -1,7 +1,7 @@
 #pragma once
 
 /* Local headers */
-#include "net/base/Acceptor.h"
+#include "net/Acceptor.h"
 #include "net/thread/ReactorThreadPoll.h"
 #include "utils/NonCopyable.h"
 #include "utils/StringPiece.h"

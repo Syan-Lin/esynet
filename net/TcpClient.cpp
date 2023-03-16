@@ -1,6 +1,6 @@
 #include "net/TcpClient.h"
 
-#include "net/base/Connector.h"
+#include "net/Connector.h"
 #include <memory>
 
 using esynet::TcpClient;
@@ -35,7 +35,7 @@ TcpClient::~TcpClient() {
             conn->setCloseCallback(cb);
         });
         if (unique) {
-            conn->close();
+            conn->forceClose();
         }
     }
 }
@@ -46,7 +46,7 @@ void TcpClient::connect() {
 }
 void TcpClient::disconnect() {
     tryToConnect_ = false;
-    if(connection_) connection_->close();
+    if(connection_) connection_->forceClose();
 }
 void TcpClient::stop() {
     tryToConnect_ = false;

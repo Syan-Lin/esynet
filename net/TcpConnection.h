@@ -5,7 +5,7 @@
 #include <memory>
 
 /* Local headers */
-#include "net/Event.h"
+#include "net/base/Event.h"
 #include "net/base/Socket.h"
 #include "utils/Buffer.h"
 #include "utils/NonCopyable.h"
@@ -17,8 +17,7 @@ namespace esynet {
 
 class Reactor;
 
-/* 该类是直接和业务代码接触的类，很大可能发生跨线程调用
- * 所以该类中的大部分操作都委托给Reactor */
+/* 非线程安全，当发生跨线程调用时，使用 reactor().run() */
 class TcpConnection : utils::NonCopyable {
 private:
     using TcpInfo = Socket::TcpInfo;
@@ -42,11 +41,9 @@ public:
     static void defaultHighWaterMarkCallback(TcpConnection&, size_t);
 
 public:
-    TcpConnection(Reactor&, utils::StringPiece, Socket,
-                    const InetAddress& local, const InetAddress& peer);
+    TcpConnection(Reactor&, utils::StringPiece, Socket, const InetAddress& local, const InetAddress& peer);
     ~TcpConnection();
 
-    /* 状态相关，线程安全 */
     const std::string&      name()          const;
     const InetAddress&      localAddress()  const;
     const InetAddress&      peerAddress()   const;
@@ -56,18 +53,16 @@ public:
     std::string             tcpInfoStr()    const;
     Reactor&                reactor()       const;
 
-    /* 操作，非线程安全 */
     void send(const void*, size_t);
     void send(const utils::StringPiece);
     void shutdown();
-    void close();
+    void forceClose();
     void setTcpNoDelay(bool);
     void enableRead();
     void disableRead();
     void setContext(const std::any&);
     const std::any& getContext() const;
 
-    /* 设置回调 */
     void setConnectionCallback(const ConnectionCallback&);
     void setMessageCallback(const MessageCallback&);
     void setWriteCompleteCallback(const WriteCompleteCallback&);
@@ -75,8 +70,8 @@ public:
     void setCloseCallback(const CloseCallback&);
     void setErrorCallback(const ErrorCallback&);
 
-    utils::Buffer& inputBuffer();
-    utils::Buffer& outputBuffer();
+    utils::Buffer& readBuffer();
+    utils::Buffer& sendBuffer();
 
     /* 当连接建立完成时调用 */
     void connectComplete();
@@ -86,8 +81,6 @@ public:
 private:
     void handleRead();
     void handleWrite();
-    void handleClose();
-    void handleError();
     std::string stateToString() const;
 
 private:
@@ -108,8 +101,8 @@ private:
     ErrorCallback errorCb_;
     size_t highWaterMark_;
 
-    utils::Buffer inputBuffer_;
-    utils::Buffer outputBuffer_;
+    utils::Buffer readBuffer_;
+    utils::Buffer sendBuffer_;
     std::any context_;
 };
 

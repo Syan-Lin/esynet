@@ -5,6 +5,7 @@
 #include "net/base/InetAddress.h"
 #include "utils/ErrorInfo.h"
 #include "exception/SocketException.h"
+#include "exception/NetworkException.h"
 
 /* Standard headers */
 #include <cstring>
@@ -73,12 +74,12 @@ int Socket::fd() const {
 void Socket::bind(const InetAddress& addr) {
     auto sa = addr.getSockAddr();
     if(::bind(*fd_, &sa, sizeof sa) == -1) {
-        throw exception::SocketException("Bind failed(fd: " + std::to_string(*fd_) + ")", errno);
+        throw exception::NetworkException("Bind failed(fd: " + std::to_string(*fd_) + ")", errno);
     }
 }
 void Socket::listen() {
     if(::listen(*fd_, SOMAXCONN) == -1) {
-        throw exception::SocketException("Listen failed(fd: " + std::to_string(*fd_) + ")", errno);
+        throw exception::NetworkException("Listen failed(fd: " + std::to_string(*fd_) + ")", errno);
     }
 }
 void Socket::close() {
@@ -95,7 +96,7 @@ Socket Socket::accept(InetAddress& peerAddr) {
     int connFd = ::accept4(*fd_, &addr, &len, SOCK_NONBLOCK | SOCK_CLOEXEC);
     if(connFd == -1 && !(errno == EINTR || errno == EMFILE || errno == ECONNABORTED)
                     && (errno == ENFILE || errno == ENOMEM)) {
-        throw exception::SocketException("Accept failed(fd: " + std::to_string(*fd_) + ")", errno);
+        throw exception::NetworkException("Accept failed(fd: " + std::to_string(*fd_) + ")", errno);
     }
     peerAddr.setSockAddr(addr);
     return connFd;
@@ -109,7 +110,7 @@ std::vector<Socket> Socket::accept(std::vector<InetAddress>& peerAddrs) {
         if(connFd == -1) {
             if(!(errno == EINTR || errno == EMFILE || errno == ECONNABORTED)
                     && (errno == ENFILE || errno == ENOMEM)) {
-                throw exception::SocketException("Accept failed(fd: " + std::to_string(*fd_) + ")", errno);
+                throw exception::NetworkException("Accept failed(fd: " + std::to_string(*fd_) + ")", errno);
             }
             break;
         } else {
@@ -124,7 +125,7 @@ std::vector<Socket> Socket::accept(std::vector<InetAddress>& peerAddrs) {
 void Socket::connect(const InetAddress& peerAddr) {
     auto& addr = peerAddr.getSockAddr();
     if(::connect(*fd_, &addr, sizeof addr) == -1) {
-        throw exception::SocketException("Connect failed(fd: " + std::to_string(*fd_) + ")", errno);
+        throw exception::NetworkException("Connect failed(fd: " + std::to_string(*fd_) + ")", errno);
     }
 }
 

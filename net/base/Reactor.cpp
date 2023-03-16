@@ -1,7 +1,7 @@
-#include "net/Reactor.h"
+#include "net/base/Reactor.h"
 
 /* Local headers */
-#include "net/Event.h"
+#include "net/base/Event.h"
 #include "logger/Logger.h"
 #include "net/poller/PollPoller.h"
 #include "net/poller/EpollPoller.h"

@@ -1,10 +1,10 @@
-#include "net/base/Acceptor.h"
+#include "net/Acceptor.h"
 
 /* Local headers */
 #include "logger/Logger.h"
 #include "net/base/InetAddress.h"
-#include "net/Reactor.h"
-#include "exception/SocketException.h"
+#include "net/base/Reactor.h"
+#include "exception/NetworkException.h"
 
 using esynet::Acceptor;
 
@@ -18,7 +18,7 @@ Acceptor::Acceptor(Reactor& reactor, const InetAddress& localAddr):
     acceptEvent_.setReadCallback(std::bind(&Acceptor::onConnection, this));
     try {
         acceptSocket_.bind(localAddr);
-    } catch(exception::SocketException& e) {
+    } catch(exception::NetworkException& e) {
         LOG_FATAL("{}", e.detail());
     }
 }
@@ -50,7 +50,7 @@ void Acceptor::onConnection() {
         if(connCb_) {
             connCb_(connSocket, peerAddr);
         }
-    } catch(exception::SocketException& e) {
+    } catch(exception::NetworkException& e) {
         LOG_ERROR("{}", e.detail());
     }
 }

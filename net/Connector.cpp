@@ -1,11 +1,11 @@
-#include "net/base/Connector.h"
+#include "net/Connector.h"
 
 /* Local headers */
 #include "logger/Logger.h"
-#include "net/Reactor.h"
-#include "net/Event.h"
+#include "net/base/Reactor.h"
+#include "net/base/Event.h"
 #include "utils/ErrorInfo.h"
-#include "exception/SocketException.h"
+#include "exception/NetworkException.h"
 
 using esynet::Connector;
 const int Connector::kMaxRetryDelayMs;
@@ -32,7 +32,7 @@ void Connector::start() {
     try {
         socket.connect(serverAddr_);
         checkConnect(socket);
-    } catch(exception::SocketException& e) {
+    } catch(exception::NetworkException& e) {
         switch (e.err()) {
             case EINPROGRESS: case EINTR: case EISCONN:
                 checkConnect(socket);

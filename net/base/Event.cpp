@@ -1,7 +1,7 @@
-#include "net/Event.h"
+#include "net/base/Event.h"
 
 /* Local headers */
-#include "net/Reactor.h"
+#include "net/base/Reactor.h"
 
 using esynet::Event;
 using esynet::Reactor;

@@ -5,7 +5,7 @@
 #include <atomic>
 
 /* Local headers */
-#include "net/Event.h"
+#include "net/base/Event.h"
 #include "net/base/Socket.h"
 #include "utils/NonCopyable.h"
 

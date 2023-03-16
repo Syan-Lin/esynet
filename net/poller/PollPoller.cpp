@@ -2,7 +2,7 @@
 
 /* Local headers */
 #include "logger/Logger.h"
-#include "net/Event.h"
+#include "net/base/Event.h"
 #include "utils/ErrorInfo.h"
 
 using esynet::poller::PollPoller;

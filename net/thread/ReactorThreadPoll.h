@@ -6,7 +6,7 @@
 #include <thread>
 
 /* Local headers */
-#include "net/Reactor.h"
+#include "net/base/Reactor.h"
 
 namespace esynet {
 
