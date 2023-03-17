@@ -6,18 +6,19 @@
 using esynet::TcpClient;
 using esynet::Reactor;
 
-TcpClient::TcpClient(Reactor& reactor,
-                    InetAddress addr,
-                    utils::StringPiece name) :
-                    reactor_(reactor),
+TcpClient::TcpClient(InetAddress addr,
+                    utils::StringPiece name,
+                    bool useEpoll) :
+                    reactor_(useEpoll),
                     name_(name.asString()),
                     retry_(false),
-                    tryToConnect_(true),
-                    nextConnId_(1) {
+                    tryToConnect_(true) {
     connector_ = std::make_unique<Connector>(reactor_, addr);
-    connectionCb_ = TcpConnection::defaultConnectionCallback;
-    messageCb_ = TcpConnection::defaultMessageCallback;
-
+    connectionCb_    = TcpConnection::defaultConnectionCallback;
+    messageCb_       = TcpConnection::defaultMessageCallback;
+    closeCb_         = TcpConnection::defaultCloseCallback;
+    errorCb_         = TcpConnection::defaultErrorCallback;
+    writeCompleteCb_ = TcpConnection::defaultWriteCompleteCallback;
     connector_->setConnectCallback([this](Socket socket) {
         onConnection(socket);
     });
@@ -25,20 +26,14 @@ TcpClient::TcpClient(Reactor& reactor,
 
 TcpClient::~TcpClient() {
     TcpConnectionPtr conn;
-    bool unique = connection_.unique();
-    conn = connection_;
-    if(conn) {
-        auto cb = [this](TcpConnection& conn) {
-            removeConnection(conn);
-        };
-        reactor_.run([&conn, cb] {
-            conn->setCloseCallback(cb);
-        });
-        if (unique) {
-            conn->forceClose();
-        }
+    if(connection_ && connection_.unique()) {
+        connection_->forceClose();
     }
 }
+
+TcpClient::TcpConnectionPtr TcpClient::connection() const { return connection_; }
+const std::string&          TcpClient::name()       const { return name_; }
+Reactor&                    TcpClient::reactor()          { return reactor_; }
 
 void TcpClient::connect() {
     tryToConnect_ = true;
@@ -53,16 +48,6 @@ void TcpClient::stop() {
     connector_->stop();
 }
 
-TcpClient::TcpConnectionPtr TcpClient::connection() const {
-    return connection_;
-}
-Reactor& TcpClient::reactor() const {
-    return reactor_;
-}
-const std::string& TcpClient::name() const {
-    return name_;
-}
-
 void TcpClient::onConnection(Socket socket) {
     std::optional<InetAddress> peerPkg = InetAddress::getPeerAddr(socket);
     std::optional<InetAddress> localPkg = InetAddress::getLocalAddr(socket);
@@ -71,7 +56,6 @@ void TcpClient::onConnection(Socket socket) {
     } else if(!localPkg.has_value()) {
         LOG_ERROR("Failed getLocalAddr(fd: {})", socket.fd());
     }
-    nextConnId_++;
     InetAddress peer = peerPkg.value();
     InetAddress local = localPkg.value();
     std::string name = name_ + peer.ip() + std::to_string(peer.port());
@@ -86,10 +70,9 @@ void TcpClient::onConnection(Socket socket) {
     conn->setErrorCallback(errorCb_);
     conn->setCloseCallback([this](TcpConnection& tcpConn) {
         removeConnection(tcpConn);
-        closeCb_(tcpConn);
     });
-    connection_ = conn;
     conn->connectComplete();
+    connection_ = conn;
 }
 
 void TcpClient::removeConnection(TcpConnection& conn) {
@@ -98,4 +81,5 @@ void TcpClient::removeConnection(TcpConnection& conn) {
     if(retry_ && tryToConnect_) {
         connector_->restart();
     }
+    closeCb_(conn);
 }

@@ -27,15 +27,15 @@ public:
     Connector(Reactor&, const InetAddress& serverAddr);
     ~Connector();
 
-    void setConnectCallback(ConnectCallback);
     void start();
     void restart();
     void stop();
 
     const InetAddress& serverAddr() const;
+    void setConnectCallback(ConnectCallback);
 
 private:
-    void onConnection(Socket);
+    void onConnect(Socket);
     void checkConnect(Socket);
     void retry(Socket);
 
@@ -44,7 +44,7 @@ private:
     bool tryToConnect_;
     State state_;
     std::unique_ptr<Event> event_;
-    ConnectCallback connCb_;
+    ConnectCallback connectCb_;
     int retryDelayMs_;
 };
 

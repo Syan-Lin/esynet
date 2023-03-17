@@ -20,11 +20,13 @@ Connector::Connector(Reactor& reactor, const InetAddress& serverAddr):
 
 Connector::~Connector() {}
 
-void Connector::setConnectCallback(ConnectCallback callback) {
-    connCb_ = callback;
+void Connector::setConnectCallback(ConnectCallback cb) {
+    connectCb_ = std::move(cb);
 }
 
 void Connector::start() {
+    reactor_.assert();
+
     if(tryToConnect_) return;
 
     tryToConnect_ = true;
@@ -50,6 +52,8 @@ void Connector::start() {
 }
 
 void Connector::stop() {
+    reactor_.assert();
+
     if(!tryToConnect_) return;
 
     tryToConnect_ = false;
@@ -59,6 +63,8 @@ void Connector::stop() {
 }
 
 void Connector::restart() {
+    reactor_.assert();
+
     state_ = kDisconnected;
     retryDelayMs_ = kInitRetryDelayMs;
     tryToConnect_ = true;
@@ -66,6 +72,8 @@ void Connector::restart() {
 }
 
 void Connector::retry(Socket socket) {
+    reactor_.assert();
+
     socket.close();
     state_ = kDisconnected;
     if(tryToConnect_) {
@@ -77,15 +85,17 @@ void Connector::retry(Socket socket) {
 }
 
 void Connector::checkConnect(Socket socket) {
+    reactor_.assert();
+
     state_ = kConnecting;
     event_ = std::make_unique<Event>(reactor_, socket.fd());
 
     event_->setWriteCallback([this, socket] {
         if(state_ != kConnecting) return;
-        /* 注销监听可写事件：
-            * 接下来要么将监听权交由TcpConnection
-            * 要么重新创建套接字进行尝试
-            * 该回调一个套接字至多执行一次 */
+        // 注销监听可写事件：
+        // 接下来要么将监听权交由TcpConnection
+        // 要么重新创建套接字进行尝试
+        // 该回调一个套接字至多执行一次
         event_->disableAll();
         event_.reset();
         // 可写表示连接完成，但不一定成功，仍然需要检查
@@ -97,7 +107,7 @@ void Connector::checkConnect(Socket socket) {
             LOG_ERROR("Connection self connect(err: {})", errnoStr(err.value()));
         } else {
             // 连接成功
-            onConnection(socket);
+            onConnect(socket);
         }
     });
     event_->setErrorCallback([this, socket] {
@@ -112,7 +122,9 @@ void Connector::checkConnect(Socket socket) {
     event_->enableWrite();
 }
 
-void Connector::onConnection(Socket socket) {
+void Connector::onConnect(Socket socket) {
+    reactor_.assert();
+
     state_ = kConnected;
-    connCb_(socket);
+    connectCb_(socket);
 }

@@ -25,7 +25,9 @@ private:
     using ErrorCallback         = TcpConnection::ErrorCallback;
 
 public:
-    TcpClient(Reactor&, InetAddress addr = 8080, utils::StringPiece name = "Server");
+    TcpClient(InetAddress addr = 8080,
+              utils::StringPiece name = "Client",
+              bool useEpoll = true);
     ~TcpClient();
 
     void connect();
@@ -33,7 +35,7 @@ public:
     void stop();
 
     TcpConnectionPtr    connection() const;
-    Reactor&            reactor() const;
+    Reactor&            reactor();
     const std::string&  name() const;
 
     /* 非线程安全 */
@@ -49,7 +51,7 @@ private:
     void onConnection(Socket);
     void removeConnection(TcpConnection&);
 
-    Reactor& reactor_;
+    Reactor reactor_;
     ConnectorPtr connector_;
     TcpConnectionPtr connection_;
 
@@ -62,7 +64,6 @@ private:
     const std::string name_;
     bool retry_;
     bool tryToConnect_;
-    int nextConnId_;
 };
 
 } /* namespace esynet */
