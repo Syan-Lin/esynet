@@ -17,7 +17,7 @@ namespace esynet {
 
 class Reactor;
 
-/* 非线程安全，当发生跨线程调用时，使用 reactor().run() */
+/* 大部分非线程安全，当发生跨线程调用时，使用 TcpConnection::reactor().run() */
 class TcpConnection : utils::NonCopyable {
 private:
     using TcpInfo = Socket::TcpInfo;
@@ -44,14 +44,15 @@ public:
     TcpConnection(Reactor&, utils::StringPiece, Socket, const InetAddress& local, const InetAddress& peer);
     ~TcpConnection();
 
-    const std::string&      name()          const;
-    const InetAddress&      localAddress()  const;
-    const InetAddress&      peerAddress()   const;
-    bool                    connected()     const;
-    bool                    disconnected()  const;
-    std::optional<TcpInfo>  tcpInfo()       const;
-    std::string             tcpInfoStr()    const;
-    Reactor&                reactor()       const;
+    /* 线程安全 */
+    const std::string&     name()         const;
+    const InetAddress&     localAddress() const;
+    const InetAddress&     peerAddress()  const;
+    bool                   connected()    const;
+    bool                   disconnected() const;
+    std::optional<TcpInfo> tcpInfo()      const;
+    std::string            tcpInfoStr()   const;
+    Reactor&               reactor()      const;
 
     void send(const void*, size_t);
     void send(const utils::StringPiece);
@@ -60,6 +61,7 @@ public:
     void setTcpNoDelay(bool);
     void enableRead();
     void disableRead();
+
     void setContext(const std::any&);
     const std::any& getContext() const;
 

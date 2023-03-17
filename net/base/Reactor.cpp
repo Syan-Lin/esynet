@@ -24,10 +24,6 @@ thread_local Reactor* t_reactorInCurThread = nullptr;
 /* 超时时间 */
 const int Reactor::kPollTimeMs = 3000;
 
-Reactor* Reactor::getReactorOfCurThread() {
-    return t_reactorInCurThread;
-}
-
 int createEventFd() {
     int fd = eventfd(0, EFD_NONBLOCK | EFD_CLOEXEC);
     if(fd == -1) {

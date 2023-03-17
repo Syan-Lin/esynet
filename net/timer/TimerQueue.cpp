@@ -51,7 +51,6 @@ Timer::ID TimerQueue::addTimer(Timer::Callback callback, Timestamp expiration, d
     Timer::ID id = tp->id();
 
     reactor_.run([this, expiration, &tp] {
-        /* 需要保证线程安全的部分 */
         timerMap_[expiration] = std::move(tp);
         timerPositionMap_[timerMap_[expiration]->id()] = expiration;
         updateTimerFd();
@@ -61,7 +60,6 @@ Timer::ID TimerQueue::addTimer(Timer::Callback callback, Timestamp expiration, d
 }
 void TimerQueue::cancel(Timer::ID id) {
     reactor_.run([this, id] {
-        /* 需要保证线程安全的部分 */
         auto iter = timerPositionMap_.find(id);
         if(iter != timerPositionMap_.end()) {
             timerMap_.erase(iter->second);
@@ -77,8 +75,8 @@ void TimerQueue::handle() {
     for(auto& timer : expiredList) {
         timer->run();
 
-        /* 维护timerMap_和timerPositionMap_
-         * 删除过期Timer以及重新注册周期Timer */
+        /* 维护 timerMap_ 和 timerPositionMap_
+         * 删除过期 Timer 以及重新注册周期 Timer */
         TimerPtr temp = std::move(timerMap_[timer->expiration()]);
         timerMap_.erase(temp->expiration());
         if(temp->repeat()) {

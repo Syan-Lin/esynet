@@ -32,12 +32,12 @@ public:
     TcpServer(Reactor&, InetAddress addr = 8080, utils::StringPiece name = "Server");
     ~TcpServer();
 
-    const std::string&  ip() const;
+    /* 线程安全 */
+    const std::string&  ip()   const;
     const std::string&  name() const;
-    int                 port() const;
+    const int           port() const;
     Reactor&            reactor();
 
-    /* 非线程安全 */
     void setConnectionCallback(const ConnectionCallback&);
     void setMessageCallback(const MessageCallback&);
     void setWriteCompleteCallback(const WriteCompleteCallback&);

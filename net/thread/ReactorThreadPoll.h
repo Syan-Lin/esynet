@@ -23,7 +23,7 @@ public:
     void stop();
 
     Reactor* getNext();       /* 按顺序获取下一个 */
-    Reactor* getLightest();   /* 获取任务最轻的一个 */
+    Reactor* getLightest();   /* 获取负载最轻的一个 */
     std::vector<Reactor*> getAllReactors();
 
     void setInitCallback(InitCallback);

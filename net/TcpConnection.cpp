@@ -79,13 +79,13 @@ Buffer&            TcpConnection::sendBuffer() { return sendBuffer_; }
 
 void TcpConnection::setTcpNoDelay(bool on)                                    { socket_.setTcpNoDelay(on); }
 void TcpConnection::setContext(const std::any& context)                       { context_ = context; }
-void TcpConnection::setConnectionCallback(const ConnectionCallback& cb)       { connectionCb_    = cb; }
-void TcpConnection::setMessageCallback(const MessageCallback& cb)             { messageCb_       = cb; }
-void TcpConnection::setWriteCompleteCallback(const WriteCompleteCallback& cb) { writeCompleteCb_ = cb; }
-void TcpConnection::setCloseCallback(const CloseCallback& cb)                 { closeCb_         = cb; }
-void TcpConnection::setErrorCallback(const ErrorCallback& cb)                 { errorCb_         = cb; }
+void TcpConnection::setConnectionCallback(const ConnectionCallback& cb)       { connectionCb_    = std::move(cb); }
+void TcpConnection::setMessageCallback(const MessageCallback& cb)             { messageCb_       = std::move(cb); }
+void TcpConnection::setWriteCompleteCallback(const WriteCompleteCallback& cb) { writeCompleteCb_ = std::move(cb); }
+void TcpConnection::setCloseCallback(const CloseCallback& cb)                 { closeCb_         = std::move(cb); }
+void TcpConnection::setErrorCallback(const ErrorCallback& cb)                 { errorCb_         = std::move(cb); }
 void TcpConnection::setHighWaterMarkCallback(const HighWaterMarkCallback& cb, size_t mark) {
-    highWaterMarkCb_ = cb;
+    highWaterMarkCb_ = std::move(cb);
     highWaterMark_   = mark;
 }
 
@@ -162,11 +162,15 @@ void TcpConnection::disableRead() {
 }
 
 void TcpConnection::connectComplete() {
+    reactor_.assert();
+
     state_ = kConnected;
     event_.enableRead();
     connectionCb_(*this);
 }
 void TcpConnection::disconnectComplete() {
+    reactor_.assert();
+
     state_ = kDisconnected;
     event_.disableAll();
     reactor_.removeEvent(event_);

@@ -25,24 +25,19 @@ void Event::handle() {
     }
 }
 
-void Event::setCloseCallback(Callback callback) {
-    closeCallback_ = callback;
-}
-void Event::setReadCallback(Callback callback) {
-    readCallback_ = callback;
-}
-void Event::setWriteCallback(Callback callback) {
-    writeCallback_ = callback;
-}
-void Event::setErrorCallback(Callback callback) {
-    errorCallback_ = callback;
-}
+void Event::setCloseCallback(Callback callback) { closeCallback_ = std::move(callback); }
+void Event::setReadCallback(Callback callback)  { readCallback_  = std::move(callback); }
+void Event::setWriteCallback(Callback callback) { writeCallback_ = std::move(callback); }
+void Event::setErrorCallback(Callback callback) { errorCallback_ = std::move(callback); }
 
-int Event::fd() const { return fd_; }
-short Event::listenedEvent() const { return listenedEvents_; }
-bool Event::writable() const { return happenedEvents_ & kWriteEvent; }
-bool Event::readable() const { return happenedEvents_ & kReadEvent; }
+int      Event::fd()            const { return fd_; }
+short    Event::listenedEvent() const { return listenedEvents_; }
+bool     Event::writable()      const { return happenedEvents_ & kWriteEvent; }
+bool     Event::readable()      const { return happenedEvents_ & kReadEvent; }
+Reactor* Event::owner()         const { return &reactor_; }
+int      Event::index()         const { return indexInPoll_; }
 void Event::setHappenedEvent(int event) { happenedEvents_ = event; }
+void Event::setIndex(int index) { indexInPoll_ = index; }
 
 void Event::enableRead() {
     if(listenedEvents_ == kNoneEvent) listenedEvents_ = 0;
@@ -68,11 +63,6 @@ void Event::disableAll() {
     listenedEvents_ = kNoneEvent;
     update();
 }
-
-int Event::index() const { return indexInPoll_; }
-void Event::setIndex(int index) { indexInPoll_ = index; }
-Reactor* Event::owner() const { return &reactor_; }
-
 void Event::update() {
     reactor_.updateEvent(*this);
 }

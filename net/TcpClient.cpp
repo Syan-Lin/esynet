@@ -18,7 +18,7 @@ TcpClient::TcpClient(Reactor& reactor,
     connectionCb_ = TcpConnection::defaultConnectionCallback;
     messageCb_ = TcpConnection::defaultMessageCallback;
 
-    connector_->setConnectionCallback([this](Socket socket) {
+    connector_->setConnectCallback([this](Socket socket) {
         onConnection(socket);
     });
 }

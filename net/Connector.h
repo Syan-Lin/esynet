@@ -15,13 +15,9 @@ class InetAddress;
 class Reactor;
 class Event;
 
-/* 非线程安全
- * 负责建立连接：
- * 当连接建立成功时，将监听权移交出去
- * 当连接建立失败时，进行重试 */
 class Connector : public utils::NonCopyable {
 private:
-    using ConnectionCallback = std::function<void(Socket)>;
+    using ConnectCallback = std::function<void(Socket)>;
     enum State { kDisconnected, kConnecting, kConnected };
 
     static const int kMaxRetryDelayMs = 30 * 1000;
@@ -31,7 +27,7 @@ public:
     Connector(Reactor&, const InetAddress& serverAddr);
     ~Connector();
 
-    void setConnectionCallback(ConnectionCallback);
+    void setConnectCallback(ConnectCallback);
     void start();
     void restart();
     void stop();
@@ -48,7 +44,7 @@ private:
     bool tryToConnect_;
     State state_;
     std::unique_ptr<Event> event_;
-    ConnectionCallback connCb_;
+    ConnectCallback connCb_;
     int retryDelayMs_;
 };
 

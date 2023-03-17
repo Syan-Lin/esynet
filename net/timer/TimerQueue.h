@@ -23,11 +23,10 @@ public:
     TimerQueue(Reactor&);
     ~TimerQueue();
 
-    /* 线程安全 */
     Timer::ID addTimer(Timer::Callback, Timestamp expiration, double interval);
     void cancel(Timer::ID);
 
-    /* 由Reactor调用 */
+    /* 由 Reactor 调用 */
     void handle();
 
 private:

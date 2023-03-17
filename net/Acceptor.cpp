@@ -15,7 +15,7 @@ Acceptor::Acceptor(Reactor& reactor, const InetAddress& localAddr):
                     port_(localAddr.port()) {
     acceptSocket_.setReuseAddr(true);
     acceptSocket_.setReusePort(true);
-    acceptEvent_.setReadCallback(std::bind(&Acceptor::onConnection, this));
+    acceptEvent_.setReadCallback(std::bind(&Acceptor::onAccept, this));
     try {
         acceptSocket_.bind(localAddr);
     } catch(exception::NetworkException& e) {
@@ -27,8 +27,8 @@ Acceptor::~Acceptor() {
     acceptEvent_.disableAll();
 }
 
-void Acceptor::setConnectionCallback(ConnectionCallback cb) {
-    connCb_ = cb;
+void Acceptor::setAcceptCallback(AcceptCallback cb) {
+    acceptCb_ = std::move(cb);
 }
 bool Acceptor::listening() const {
     return listen_;
@@ -41,14 +41,14 @@ void Acceptor::listen() {
     acceptEvent_.enableRead();
 }
 
-void Acceptor::onConnection() {
+void Acceptor::onAccept() {
     reactor_.assert();
 
     InetAddress peerAddr;
     try {
         Socket connSocket = acceptSocket_.accept(peerAddr);
-        if(connCb_) {
-            connCb_(connSocket, peerAddr);
+        if(acceptCb_) {
+            acceptCb_(connSocket, peerAddr);
         }
     } catch(exception::NetworkException& e) {
         LOG_ERROR("{}", e.detail());

@@ -15,7 +15,7 @@ TEST_CASE("Acceptor_Test"){
     InetAddress listenAddr(8888);
 
     Acceptor acceptor(reactor, listenAddr);
-    acceptor.setConnectionCallback([](Socket connSock, const InetAddress& peerAddr){
+    acceptor.setAcceptCallback([](Socket connSock, const InetAddress& peerAddr){
         LOG_INFO("New connection from {}", peerAddr.ip());
         /* 可以省去，Socket保证会自动close，但可能延迟
          * 如果有立刻close的需求可以这样调用 */

@@ -12,7 +12,6 @@
 
 namespace esynet::logger {
 
-/* 线程安全的异步日志后端 */
 class AsyncLogger : utils::Singletonable {
 public:
     using Buffer = utils::LogBuffer<4_MB>;
@@ -35,11 +34,13 @@ private:
 
 private:
     const int flushInterval_;
+
     std::mutex mutex_;
     std::thread thread_;
     std::atomic<bool> running_;
     std::atomic<bool> isWriting_;
     std::condition_variable cond_;
+
     std::unique_ptr<utils::FileWriter> file_;
     BufferPtr bufferForLog_;            /* log 写入缓冲区 */
     BufferPtr bufferForWrite_;          /* 写入文件缓冲区 */

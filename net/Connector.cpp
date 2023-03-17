@@ -20,7 +20,7 @@ Connector::Connector(Reactor& reactor, const InetAddress& serverAddr):
 
 Connector::~Connector() {}
 
-void Connector::setConnectionCallback(ConnectionCallback callback) {
+void Connector::setConnectCallback(ConnectCallback callback) {
     connCb_ = callback;
 }
 

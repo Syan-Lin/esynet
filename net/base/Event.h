@@ -26,11 +26,11 @@ public:
     void setWriteCallback(Callback);
     void setErrorCallback(Callback);
 
-    int fd() const;
+    int   fd()            const;
     short listenedEvent() const;
-    bool writable() const;
-    bool readable() const;
-    void setHappenedEvent(int event);
+    bool  writable()      const;
+    bool  readable()      const;
+    void  setHappenedEvent(int event);
 
     /* 设置监听事件 */
     void enableRead();
@@ -39,7 +39,7 @@ public:
     void disableRead();
     void disableAll();
 
-    /* Poller相关 */
+    /* Poller */
     int index() const;
     void setIndex(int);
 

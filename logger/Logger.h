@@ -24,8 +24,6 @@ class AsyncLogger;
 
 namespace esynet {
 
-/* 用户所使用的 Logger 前端，具体 Log 任务通过 BackEndFunction 传递给后端
- * 通过宏使用，每次都会创建新对象，所以不用保证线程安全 */
 class Logger {
 public:
     enum LogLevel { NONE, DEBUG, INFO, WARN, ERROR, FATAL, };
@@ -64,13 +62,12 @@ private:
 public:
     Logger(const char* file, int line, const char* func, LogLevel);
 
-    /* 模板函数，必须放在头文件中 */
     template<typename... ARGS>
     void log(const char* fmt, ARGS&&... args) const {
         using namespace fmt;
         if(level_ < gLogLevel) return;
 
-        /* 性能优化相关 */
+        /* 性能优化 */
         thread_local static std::string thread_id = getThreadId();  /* 每个线程只会执行一次 */
         const std::string& date = getDate(time_);                   /* 缓存日期，避免重复 format */
         std::string time = getTime(time_);                          /* 缓存时间，避免重复 format */

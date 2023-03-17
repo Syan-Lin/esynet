@@ -14,26 +14,25 @@ namespace esynet {
 class InetAddress;
 class Reactor;
 
-/* 非线程安全 */
 class Acceptor : public utils::NonCopyable {
 private:
-    using ConnectionCallback = std::function<void(Socket, const InetAddress&)>;
+    using AcceptCallback = std::function<void(Socket, const InetAddress&)>;
 
 public:
     Acceptor(Reactor&, const InetAddress& localAddr);
     ~Acceptor();
 
-    void setConnectionCallback(ConnectionCallback);
-    bool listening() const; /* 线程安全 */
+    void setAcceptCallback(AcceptCallback);
+    bool listening() const;
     void listen();
 
 private:
-    void onConnection();
+    void onAccept();
 
     Reactor& reactor_;
     Socket acceptSocket_;
     Event acceptEvent_;
-    ConnectionCallback connCb_;
+    AcceptCallback acceptCb_;
     std::atomic<bool> listen_;
     const int port_;
 };

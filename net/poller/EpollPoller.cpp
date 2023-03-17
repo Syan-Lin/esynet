@@ -68,8 +68,7 @@ void EpollPoller::removeEvent(Event& event) {
     int index = event.index();
     if(index >= epollEvents_.size() || index < 0) {
         LOG_ERROR("Event(fd: {}) index out of range", event.fd());
-    }
-    if(index == epollEvents_.size() - 1) {
+    } else if(index == epollEvents_.size() - 1) {
         epollEvents_.pop_back();
     } else {
         int lastFd = epollEvents_.back().data.fd;

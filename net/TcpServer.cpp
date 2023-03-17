@@ -21,7 +21,7 @@ TcpServer::TcpServer(Reactor& reactor, InetAddress addr, utils::StringPiece name
         nextConnId_(1) {
     connectionCb_ = TcpConnection::defaultConnectionCallback;
     messageCb_ = TcpConnection::defaultMessageCallback;
-    acceptor_.setConnectionCallback(std::bind(
+    acceptor_.setAcceptCallback(std::bind(
         &TcpServer::onConnection, this, std::placeholders::_1, std::placeholders::_2));
 }
 

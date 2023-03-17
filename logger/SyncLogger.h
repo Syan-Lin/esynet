@@ -10,7 +10,6 @@
 
 namespace esynet::logger {
 
-/* 线程安全的同步日志后端 */
 class SyncLogger : utils::Singletonable {
 public:
     SyncLogger(std::filesystem::path);
