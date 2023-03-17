@@ -8,8 +8,8 @@
 #include "exception/NetworkException.h"
 
 using esynet::Connector;
-const int Connector::kMaxRetryDelayMs;
-const int Connector::kInitRetryDelayMs;
+const int Connector::kMaxRetryDelayMs  = 30 * 1000;
+const int Connector::kInitRetryDelayMs = 500;
 
 Connector::Connector(Reactor& reactor, const InetAddress& serverAddr):
                     reactor_(reactor),

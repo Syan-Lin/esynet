@@ -11,7 +11,6 @@ using esynet::InetAddress;
 using esynet::Reactor;
 using std::optional;
 using TcpInfo = esynet::Socket::TcpInfo;
-using esynet::utils::Buffer;
 
 void TcpConnection::defaultConnectionCallback(TcpConnection& conn) {
     LOG_DEBUG("Connection from {}:{}", conn.peerAddress().ip());
@@ -74,19 +73,47 @@ const InetAddress& TcpConnection::peerAddress()  const { return peerAddr_; }
 const InetAddress& TcpConnection::localAddress() const { return localAddr_; }
 bool               TcpConnection::disconnected() const { return state_ == kDisconnected; }
 const std::any&    TcpConnection::getContext()   const { return context_; }
-Buffer&            TcpConnection::readBuffer() { return readBuffer_; }
-Buffer&            TcpConnection::sendBuffer() { return sendBuffer_; }
 
-void TcpConnection::setTcpNoDelay(bool on)                                    { socket_.setTcpNoDelay(on); }
-void TcpConnection::setContext(const std::any& context)                       { context_ = context; }
-void TcpConnection::setConnectionCallback(const ConnectionCallback& cb)       { connectionCb_    = std::move(cb); }
-void TcpConnection::setMessageCallback(const MessageCallback& cb)             { messageCb_       = std::move(cb); }
-void TcpConnection::setWriteCompleteCallback(const WriteCompleteCallback& cb) { writeCompleteCb_ = std::move(cb); }
-void TcpConnection::setCloseCallback(const CloseCallback& cb)                 { closeCb_         = std::move(cb); }
-void TcpConnection::setErrorCallback(const ErrorCallback& cb)                 { errorCb_         = std::move(cb); }
+void TcpConnection::setTcpNoDelay(bool on) {
+    reactor_.run([this, on]{
+        socket_.setTcpNoDelay(on);
+    });
+}
+void TcpConnection::setContext(const std::any& context) {
+    reactor_.run([this, &context] {
+        context_ = context;
+    });
+}
+void TcpConnection::setConnectionCallback(const ConnectionCallback& cb) {
+    reactor_.run([this, &cb] {
+        connectionCb_ = std::move(cb);
+    });
+}
+void TcpConnection::setMessageCallback(const MessageCallback& cb) {
+    reactor_.run([this, &cb] {
+        messageCb_ = std::move(cb);
+    });
+}
+void TcpConnection::setWriteCompleteCallback(const WriteCompleteCallback& cb) {
+    reactor_.run([this, &cb] {
+        writeCompleteCb_ = std::move(cb);
+    });
+}
+void TcpConnection::setCloseCallback(const CloseCallback& cb) {
+    reactor_.run([this, &cb] {
+        closeCb_ = std::move(cb);
+    });
+}
+void TcpConnection::setErrorCallback(const ErrorCallback& cb) {
+    reactor_.run([this, &cb] {
+        errorCb_ = std::move(cb);
+    });
+}
 void TcpConnection::setHighWaterMarkCallback(const HighWaterMarkCallback& cb, size_t mark) {
-    highWaterMarkCb_ = std::move(cb);
-    highWaterMark_   = mark;
+    reactor_.run([this, &cb, mark] {
+        highWaterMarkCb_ = std::move(cb);
+        highWaterMark_   = mark;
+    });
 }
 
 void TcpConnection::send(const utils::StringPiece msg) {

@@ -17,7 +17,6 @@ namespace esynet {
 
 class Reactor;
 
-/* 大部分非线程安全，当发生跨线程调用时，使用 TcpConnection::reactor().run() */
 class TcpConnection : utils::NonCopyable {
 private:
     using TcpInfo = Socket::TcpInfo;
@@ -44,7 +43,6 @@ public:
     TcpConnection(Reactor&, utils::StringPiece, Socket, const InetAddress& local, const InetAddress& peer);
     ~TcpConnection();
 
-    /* 线程安全 */
     const std::string&     name()         const;
     const InetAddress&     localAddress() const;
     const InetAddress&     peerAddress()  const;
@@ -72,12 +70,9 @@ public:
     void setCloseCallback(const CloseCallback&);
     void setErrorCallback(const ErrorCallback&);
 
-    utils::Buffer& readBuffer();
-    utils::Buffer& sendBuffer();
-
-    /* 当连接建立完成时调用 */
+    /* 当连接建立完成时调用，非线程安全 */
     void connectComplete();
-    /* 当连接断开完成时调用 */
+    /* 当连接断开完成时调用，非线程安全 */
     void disconnectComplete();
 
 private:

@@ -68,7 +68,7 @@ std::vector<Reactor*> ReactorThreadPoll::getAllReactors() {
 }
 
 void ReactorThreadPoll::setInitCallback(InitCallback cb) {
-    initCb_ = cb;
+    initCb_ = std::move(cb);
 }
 void ReactorThreadPoll::setThreadNum(size_t num) {
     threadNum_ = num;

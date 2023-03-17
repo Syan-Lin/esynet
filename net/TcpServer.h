@@ -29,14 +29,16 @@ public:
     enum Strategy { kRoundRobin, kLightest };
 
 public:
-    TcpServer(Reactor&, InetAddress addr = 8080, utils::StringPiece name = "Server");
+    TcpServer(InetAddress addr = 8080,
+              utils::StringPiece name = "Server",
+              bool useEpoll = true);
     ~TcpServer();
 
     /* 线程安全 */
-    const std::string&  ip()   const;
-    const std::string&  name() const;
-    const int           port() const;
-    Reactor&            reactor();
+    const std::string& ip()   const;
+    const std::string& name() const;
+    const int          port() const;
+    Reactor&           reactor();
 
     void setConnectionCallback(const ConnectionCallback&);
     void setMessageCallback(const MessageCallback&);
@@ -49,13 +51,14 @@ public:
     ReactorThreadPoll& threadPoll();
     void setThreadPollStrategy(Strategy strategy);
 
-    void start(); /* 线程安全，开始监听 */
+    void start();
+    void shutdown();
 
 private:
     void onConnection(Socket, const InetAddress&);
     void removeConnection(TcpConnection& conn);
 
-    Reactor& reactor_;
+    Reactor reactor_;
     const int port_;
     const std::string ip_;
     const std::string name_;
@@ -63,7 +66,7 @@ private:
 
     Acceptor acceptor_;
     ReactorThreadPoll threadPoll_;
-    Strategy strategy_ = kRoundRobin;
+    Strategy strategy_;
 
     ConnectionCallback connectionCb_;
     WriteCompleteCallback writeCompleteCb_;
@@ -71,7 +74,7 @@ private:
     CloseCallback closeCb_;
     ErrorCallback errorCb_;
 
-    int nextConnId_;
+    int connectionCount_;
     ConnectionMap connections_;
 };
 

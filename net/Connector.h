@@ -20,8 +20,8 @@ private:
     using ConnectCallback = std::function<void(Socket)>;
     enum State { kDisconnected, kConnecting, kConnected };
 
-    static const int kMaxRetryDelayMs = 30 * 1000;
-    static const int kInitRetryDelayMs = 500;
+    static const int kMaxRetryDelayMs;
+    static const int kInitRetryDelayMs;
 
 public:
     Connector(Reactor&, const InetAddress& serverAddr);

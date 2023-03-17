@@ -36,7 +36,7 @@ private:
     void wakeup();
 
 public:
-    Reactor(bool = true);
+    Reactor(bool useEpoll = true);
     ~Reactor();
 
     void start();
