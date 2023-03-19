@@ -1,26 +1,32 @@
 #include "net/base/Event.h"
 
 /* Local headers */
-#include "net/base/Reactor.h"
+#include "net/base/Looper.h"
+#include "logger/Logger.h"
+#include "utils/ErrorInfo.h"
 
 using esynet::Event;
-using esynet::Reactor;
+using esynet::Looper;
 
-Event::Event(Reactor& loop, int fd):
-        reactor_(loop), fd_(fd), listenedEvents_(-1),
+Event::Event(Looper& looper, int fd):
+        looper_(looper), fd_(fd), listenedEvents_(-1),
         happenedEvents_(0), indexInPoll_(-1) {}
 
 void Event::handle() {
     if(happenedEvents_ & kCloseEvent) {
+        LOG_DEBUG("handle close event(fd: {})", fd_);
         if(closeCallback_) closeCallback_();
     }
     if(happenedEvents_ & kReadEvent) {
+        LOG_DEBUG("handle read event(fd: {})", fd_);
         if(readCallback_) readCallback_();
     }
     if(happenedEvents_ & kWriteEvent) {
+        LOG_DEBUG("handle write event(fd: {})", fd_);
         if(writeCallback_) writeCallback_();
     }
     if(happenedEvents_ & kErrorEvent) {
+        LOG_DEBUG("handle error event(fd: {})", fd_);
         if(errorCallback_) errorCallback_();
     }
 }
@@ -34,7 +40,7 @@ int      Event::fd()            const { return fd_; }
 short    Event::listenedEvent() const { return listenedEvents_; }
 bool     Event::writable()      const { return happenedEvents_ & kWriteEvent; }
 bool     Event::readable()      const { return happenedEvents_ & kReadEvent; }
-Reactor* Event::owner()         const { return &reactor_; }
+Looper*  Event::looper()        const { return &looper_; }
 int      Event::index()         const { return indexInPoll_; }
 void Event::setHappenedEvent(int event) { happenedEvents_ = event; }
 void Event::setIndex(int index) { indexInPoll_ = index; }
@@ -59,10 +65,10 @@ void Event::disableRead() {
     if(listenedEvents_ == 0) listenedEvents_ = kNoneEvent;
     update();
 }
-void Event::disableAll() {
+void Event::cancel() {
     listenedEvents_ = kNoneEvent;
-    update();
+    looper_.removeEvent(*this);
 }
 void Event::update() {
-    reactor_.updateEvent(*this);
+    looper_.updateEvent(*this);
 }

@@ -1,4 +1,4 @@
-#include "net/base/InetAddress.h"
+#include "net/base/NetAddress.h"
 #include "net/base/Socket.h"
 #include <iostream>
 
@@ -8,7 +8,7 @@ using namespace esynet;
 int main() {
     /* 根据域名获取 IP */
     string host = "www.bilibili.com";
-    auto result = InetAddress::resolve(host);
+    auto result = NetAddress::resolve(host);
     if (result.has_value()) {
         cout << "resolve " << host << " success: " << result.value().ip() << endl;
     } else {

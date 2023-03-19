@@ -1,4 +1,4 @@
-#include "net/base/Reactor.h"
+#include "net/base/Looper.h"
 
 /* Local headers */
 #include "net/base/Event.h"
@@ -12,17 +12,17 @@
 /* Linux headers */
 #include <sys/eventfd.h>
 
-using esynet::Reactor;
+using esynet::Looper;
 using esynet::poller::EpollPoller;
 using esynet::poller::PollPoller;
 using esynet::utils::Timestamp;
 using esynet::timer::Timer;
 using esynet::Logger;
 
-/* 每个线程至多有一个 Reactor */
-thread_local Reactor* t_reactorInCurThread = nullptr;
+/* 每个线程至多有一个 Looper */
+thread_local Looper* t_reactorInCurThread = nullptr;
 /* 超时时间 */
-const int Reactor::kPollTimeMs = 3000;
+const int Looper::kPollTimeMs = 3000;
 
 int createEventFd() {
     int fd = eventfd(0, EFD_NONBLOCK | EFD_CLOEXEC);
@@ -32,7 +32,7 @@ int createEventFd() {
     return fd;
 }
 
-Reactor::Reactor(bool useEpoll):
+Looper::Looper(bool useEpoll):
             stop_(false),
             numOfEvents_(0),
             isLooping_(false),
@@ -40,11 +40,11 @@ Reactor::Reactor(bool useEpoll):
             wakeupEvent_(*this, wakeupFd_),
             tid_(std::this_thread::get_id()) {
     if(t_reactorInCurThread) {
-        LOG_FATAL("Another Reactor({:p}) exists in this thread({})",
+        LOG_FATAL("Another Looper({:p}) exists in this thread({})",
                     static_cast<void*>(t_reactorInCurThread), tidToStr(tid_));
     } else {
         t_reactorInCurThread = this;
-        LOG_DEBUG("Reactor({:p}) created in thread {}",
+        LOG_DEBUG("Looper({:p}) created in thread {}",
                     static_cast<void*>(this), tidToStr(tid_));
     }
     if(useEpoll) {
@@ -60,26 +60,26 @@ Reactor::Reactor(bool useEpoll):
         if(eventfd_read(wakeupFd_, &temp) == -1) {
             LOG_ERROR("Failed to read eventfd({})", errnoStr(errno));
         }
-        LOG_DEBUG("Wake up Reactor({:p})", static_cast<void*>(this));
+        LOG_DEBUG("Wake up Looper({:p})", static_cast<void*>(this));
     });
     wakeupEvent_.enableRead();
 }
 
-Reactor::~Reactor() {
+Looper::~Looper() {
     if(isLooping_) {
-        LOG_FATAL("Deconstruct Reactor({:p}) while is looping",
+        LOG_FATAL("Deconstruct Looper({:p}) while is looping",
                     static_cast<void*>(t_reactorInCurThread));
     }
     t_reactorInCurThread = nullptr;
     removeEvent(wakeupEvent_);
 }
 
-void Reactor::start() {
+void Looper::start() {
     assert();
 
     stop_ = false;
     isLooping_ = true;
-    LOG_DEBUG("Reactor({:p}) start looping", static_cast<void*>(this));
+    LOG_DEBUG("Looper({:p}) start looping", static_cast<void*>(this));
     while(!stop_) {
         activeEvents_.clear();
         /* 获取活动事件 */
@@ -103,30 +103,30 @@ void Reactor::start() {
             task();
         }
     }
-    LOG_DEBUG("Reactor({:p}) stop looping", static_cast<void*>(this));
+    LOG_DEBUG("Looper({:p}) stop looping", static_cast<void*>(this));
     isLooping_ = false;
 }
-void Reactor::stop() { stop_ = true; wakeup(); }
-Timestamp Reactor::lastPollTime() {
+void Looper::stop() { stop_ = true; wakeup(); }
+Timestamp Looper::lastPollTime() {
     std::unique_lock<std::mutex> lock(mutex_);
     return lastPollTime_;
 }
 
 /* 该部分的线程安全由TimerQueue保证 */
-Timer::ID Reactor::runAt(Timestamp timePoint, Timer::Callback callback) {
+Timer::ID Looper::runAt(Timestamp timePoint, Timer::Callback callback) {
     return timerQueue_->addTimer(callback, timePoint, 0.0);
 }
-Timer::ID Reactor::runAfter(double delay, Timer::Callback callback) {
+Timer::ID Looper::runAfter(double delay, Timer::Callback callback) {
     return timerQueue_->addTimer(callback, Timestamp::now() + delay, 0.0);
 }
-Timer::ID Reactor::runEvery(double interval, Timer::Callback callback) {
+Timer::ID Looper::runEvery(double interval, Timer::Callback callback) {
     return timerQueue_->addTimer(callback, Timestamp::now(), interval);
 }
-void Reactor::cancelTimer(Timer::ID id) {
+void Looper::cancelTimer(Timer::ID id) {
     timerQueue_->cancel(id);
 }
 
-void Reactor::run(Function func) {
+void Looper::run(Function func) {
     if(isInLoopThread()) {
         func();
     } else {
@@ -134,7 +134,7 @@ void Reactor::run(Function func) {
         wakeup();
     }
 }
-void Reactor::queue(Function func) {
+void Looper::queue(Function func) {
     {
         std::unique_lock<std::mutex> lock(mutex_);
         tasks_.push_back(func);
@@ -142,40 +142,42 @@ void Reactor::queue(Function func) {
 }
 
 /* 通过eventfd来唤醒poll */
-void Reactor::wakeup() {
+void Looper::wakeup() {
     if(eventfd_write(wakeupFd_, 1) == -1) {
         LOG_ERROR("Failed to write eventfd({})", errnoStr(errno));
     }
 }
 
 /* 将Event委托的update转发给poller */
-void Reactor::updateEvent(Event& event) {
-    if(event.owner() != this) {
+void Looper::updateEvent(Event& event) {
+    if(event.looper() != this) {
         LOG_FATAL("Event({}) doesn't belong to loop({:p})",
             event.fd(), static_cast<void*>(this));
     }
+    LOG_DEBUG("Update event (fd: {})", event.fd());
     poller_->updateEvent(event);
 }
-void Reactor::removeEvent(Event& event) {
-    if(event.owner() != this) {
+void Looper::removeEvent(Event& event) {
+    if(event.looper() != this) {
         LOG_FATAL("Event({}) doesn't belong to loop({:p})",
             event.fd(), static_cast<void*>(this));
     }
+    LOG_DEBUG("Remove event (fd: {})", event.fd());
     poller_->removeEvent(event);
 }
 
-bool Reactor::isInLoopThread() const {
+bool Looper::isInLoopThread() const {
     return tid_ == std::this_thread::get_id();
 }
-void Reactor::assert() const {
+void Looper::assert() const {
     if(!(tid_ == std::this_thread::get_id())) {
-        LOG_FATAL("Reactor({}) called by another thread({})", tidToStr(tid_), tidToStr(std::this_thread::get_id()));
+        LOG_FATAL("Looper({}) called by another thread({})", tidToStr(tid_), tidToStr(std::this_thread::get_id()));
     }
 }
-bool Reactor::isLooping() const { return isLooping_; }
-int Reactor::numOfEvents() { numOfEvents_ = activeEvents_.size(); return numOfEvents_; }
+bool Looper::isLooping() const { return isLooping_; }
+int Looper::numOfEvents() { numOfEvents_ = activeEvents_.size(); return numOfEvents_; }
 
-std::string Reactor::tidToStr(std::thread::id tid) const {
+std::string Looper::tidToStr(std::thread::id tid) const {
     std::stringstream ss;
     ss << tid;
     std::string tidStr = ss.str();

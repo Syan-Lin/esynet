@@ -2,7 +2,7 @@
 
 /* Local headers */
 #include "logger/Logger.h"
-#include "net/base/InetAddress.h"
+#include "net/base/NetAddress.h"
 #include "utils/ErrorInfo.h"
 #include "exception/SocketException.h"
 #include "exception/NetworkException.h"
@@ -27,8 +27,8 @@ std::optional<int> Socket::getSocketError(Socket socket) {
     return std::nullopt;
 }
 bool Socket::isSelfConnect(Socket socket) {
-    auto local = InetAddress::getLocalAddr(socket);
-    auto peer = InetAddress::getLocalAddr(socket);
+    auto local = NetAddress::getLocalAddr(socket);
+    auto peer = NetAddress::getLocalAddr(socket);
     if(local.has_value() && peer.has_value()) {
         struct sockaddr_in6&
         localAddr = (sockaddr_in6&)local.value().getSockAddr();
@@ -42,90 +42,74 @@ bool Socket::isSelfConnect(Socket socket) {
     return false;
 }
 
-Socket::Socket() : fd_(std::make_shared<const int>(
-                        socket(AF_INET, SOCK_STREAM | SOCK_NONBLOCK | SOCK_CLOEXEC, 0))) {
-    if(*fd_ == -1) {
+Socket::Socket() : fd_(socket(AF_INET, SOCK_STREAM | SOCK_NONBLOCK | SOCK_CLOEXEC, 0)) {
+    if(fd_ == -1) {
         throw exception::SocketException("Create socket failed", errno);
     }
+    LOG_DEBUG("create socket {}", fd_);
 }
-Socket::Socket(int fd) : fd_(std::make_shared<const int>(fd)) {}
-Socket::Socket(const Socket& sock) : fd_(sock.fd_) {}
-Socket::Socket(Socket&& sock) : fd_(std::move(sock.fd_)) {}
-Socket& Socket::operator=(const Socket& sock) {
-    fd_ = sock.fd_;
-    return *this;
-}
-Socket& Socket::operator=(Socket&& sock) {
-    fd_ = std::move(sock.fd_);
-    return *this;
-}
-Socket::~Socket() {
-    if(fd_.unique()) {
-        if(::close(*fd_) == -1) {
-            LOG_ERROR("close error(fd: {}, errno: {})", *fd_, errnoStr(errno));
-        }
-    }
-}
+Socket::Socket(int fd) : fd_(fd) {}
 
 int Socket::fd() const {
-    return *fd_;
+    return fd_;
 }
 
-void Socket::bind(const InetAddress& addr) {
+void Socket::bind(const NetAddress& addr) {
     auto sa = addr.getSockAddr();
-    if(::bind(*fd_, &sa, sizeof sa) == -1) {
-        throw exception::NetworkException("Bind failed(fd: " + std::to_string(*fd_) + ")", errno);
+    if(::bind(fd_, &sa, sizeof sa) == -1) {
+        throw exception::NetworkException("Bind failed(fd: " + std::to_string(fd_) + ")", errno);
     }
 }
 void Socket::listen() {
-    if(::listen(*fd_, SOMAXCONN) == -1) {
-        throw exception::NetworkException("Listen failed(fd: " + std::to_string(*fd_) + ")", errno);
+    if(::listen(fd_, SOMAXCONN) == -1) {
+        throw exception::NetworkException("Listen failed(fd: " + std::to_string(fd_) + ")", errno);
     }
 }
 void Socket::close() {
-    shutdownRead();
-    shutdownWrite();
+    if(::close(fd_) == -1) {
+        LOG_ERROR("close error(fd: {}, errno: {})", fd_, errnoStr(errno));
+    }
+    LOG_DEBUG("close socket {}", fd_);
 }
 Socket Socket::accept() {
-    InetAddress peerAddr;
+    NetAddress peerAddr;
     return accept(peerAddr);
 }
-Socket Socket::accept(InetAddress& peerAddr) {
-    InetAddress::SockAddr addr;
+Socket Socket::accept(NetAddress& peerAddr) {
+    NetAddress::SockAddr addr;
     socklen_t len;
-    int connFd = ::accept4(*fd_, &addr, &len, SOCK_NONBLOCK | SOCK_CLOEXEC);
-    if(connFd == -1 && !(errno == EINTR || errno == EMFILE || errno == ECONNABORTED)
-                    && (errno == ENFILE || errno == ENOMEM)) {
-        throw exception::NetworkException("Accept failed(fd: " + std::to_string(*fd_) + ")", errno);
+    int connFd = ::accept4(fd_, &addr, &len, SOCK_NONBLOCK | SOCK_CLOEXEC);
+    if(connFd == -1) {
+        throw exception::NetworkException("Accept failed(fd: " + std::to_string(fd_) + ")", errno);
     }
     peerAddr.setSockAddr(addr);
     return connFd;
 }
-std::vector<Socket> Socket::accept(std::vector<InetAddress>& peerAddrs) {
+std::vector<Socket> Socket::accept(std::vector<NetAddress>& peerAddrs) {
     std::vector<Socket> fds;
     while(true) {
-        InetAddress::SockAddr addr;
+        NetAddress::SockAddr addr;
         socklen_t len;
-        int connFd = ::accept4(*fd_, &addr, &len, SOCK_NONBLOCK | SOCK_CLOEXEC);
+        int connFd = ::accept4(fd_, &addr, &len, SOCK_NONBLOCK | SOCK_CLOEXEC);
         if(connFd == -1) {
             if(!(errno == EINTR || errno == EMFILE || errno == ECONNABORTED)
                     && (errno == ENFILE || errno == ENOMEM)) {
-                throw exception::NetworkException("Accept failed(fd: " + std::to_string(*fd_) + ")", errno);
+                throw exception::NetworkException("Accept failed(fd: " + std::to_string(fd_) + ")", errno);
             }
             break;
         } else {
             fds.push_back(connFd);
-            InetAddress peerAddr;
+            NetAddress peerAddr;
             peerAddr.setSockAddr(addr);
             peerAddrs.push_back(peerAddr);
         }
     }
     return fds;
 }
-void Socket::connect(const InetAddress& peerAddr) {
+void Socket::connect(const NetAddress& peerAddr) {
     auto& addr = peerAddr.getSockAddr();
-    if(::connect(*fd_, &addr, sizeof addr) == -1) {
-        throw exception::NetworkException("Connect failed(fd: " + std::to_string(*fd_) + ")", errno);
+    if(::connect(fd_, &addr, sizeof addr) == -1) {
+        throw exception::NetworkException("Connect failed(fd: " + std::to_string(fd_) + ")", errno);
     }
 }
 
@@ -133,7 +117,7 @@ std::optional<Socket::TcpInfo> Socket::getTcpInfo() const {
     TcpInfo info;
     socklen_t len = sizeof info;
     memset(&info, 0, len);
-    if(getsockopt(*fd_, SOL_TCP, TCP_INFO, &info, &len) == -1) {
+    if(getsockopt(fd_, SOL_TCP, TCP_INFO, &info, &len) == -1) {
         return std::nullopt;
     }
     return info;
@@ -156,59 +140,59 @@ std::string Socket::getTcpInfoString() const {
 }
 
 void Socket::shutdownWrite() {
-    if(shutdown(*fd_, SHUT_WR) == -1) {
-        LOG_ERROR("shutdownWrite failed(fd: {}, errno: )", *fd_, errnoStr(errno));
+    if(shutdown(fd_, SHUT_WR) == -1) {
+        LOG_ERROR("shutdownWrite failed(fd: {}, errno: )", fd_, errnoStr(errno));
     }
 }
 void Socket::shutdownRead() {
-    if(shutdown(*fd_, SHUT_RD) == -1) {
-        LOG_ERROR("shutdownRead failed(fd: {}, errno: )", *fd_, errnoStr(errno));
+    if(shutdown(fd_, SHUT_RD) == -1) {
+        LOG_ERROR("shutdownRead failed(fd: {}, errno: )", fd_, errnoStr(errno));
     }
 }
 
 void Socket::setTcpNoDelay(bool on) {
     int optval = on ? 1 : 0;
-    if(setsockopt(*fd_, IPPROTO_TCP, TCP_NODELAY, &optval, sizeof optval) == -1) {
-        LOG_ERROR("setTcpNoDelay failed(fd: {}, errno: )", *fd_, errnoStr(errno));
+    if(setsockopt(fd_, IPPROTO_TCP, TCP_NODELAY, &optval, sizeof optval) == -1) {
+        LOG_ERROR("setTcpNoDelay failed(fd: {}, errno: )", fd_, errnoStr(errno));
     }
 }
 void Socket::setReuseAddr(bool on) {
     int optval = on ? 1 : 0;
-    if(setsockopt(*fd_, IPPROTO_TCP, SO_REUSEADDR, &optval, sizeof optval) == -1) {
-        LOG_ERROR("setReuseAddr failed(fd: {}, errno: )", *fd_, errnoStr(errno));
+    if(setsockopt(fd_, IPPROTO_TCP, SO_REUSEADDR, &optval, sizeof optval) == -1) {
+        LOG_ERROR("setReuseAddr failed(fd: {}, errno: )", fd_, errnoStr(errno));
     }
 }
 void Socket::setReusePort(bool on) {
     int optval = on ? 1 : 0;
-    if(setsockopt(*fd_, IPPROTO_TCP, SO_REUSEPORT, &optval, sizeof optval) == -1) {
-        LOG_ERROR("setReusePort failed(fd: {}, errno: )", *fd_, errnoStr(errno));
+    if(setsockopt(fd_, IPPROTO_TCP, SO_REUSEPORT, &optval, sizeof optval) == -1) {
+        LOG_ERROR("setReusePort failed(fd: {}, errno: )", fd_, errnoStr(errno));
     }
 }
 void Socket::setKeepAlive(bool on) {
     int optval = on ? 1 : 0;
-    if(setsockopt(*fd_, IPPROTO_TCP, SO_KEEPALIVE, &optval, sizeof optval) == -1) {
-        LOG_ERROR("setKeepAlive failed(fd: {}, errno: )", *fd_, errnoStr(errno));
+    if(setsockopt(fd_, IPPROTO_TCP, SO_KEEPALIVE, &optval, sizeof optval) == -1) {
+        LOG_ERROR("setKeepAlive failed(fd: {}, errno: )", fd_, errnoStr(errno));
     }
 }
 
 size_t Socket::write(const void* data, size_t len) {
-    size_t bytes = ::write(*fd_, data, len);
+    size_t bytes = ::write(fd_, data, len);
     if(bytes < 0) {
-        throw exception::SocketException("Write error(fd: " + std::to_string(*fd_) + ")", errno);
+        throw exception::SocketException("Write error(fd: " + std::to_string(fd_) + ")", errno);
     }
     return bytes;
 }
 size_t Socket::read(void* buf, size_t len) {
-    size_t bytes = ::read(*fd_, buf, len);
+    size_t bytes = ::read(fd_, buf, len);
     if(bytes < 0) {
-        throw exception::SocketException("Read error(fd: " + std::to_string(*fd_) + ")", errno);
+        throw exception::SocketException("Read error(fd: " + std::to_string(fd_) + ")", errno);
     }
     return bytes;
 }
 size_t Socket::readv(const struct iovec* iov, int iovCount) {
-    size_t bytes = ::readv(*fd_, iov, iovCount);
+    size_t bytes = ::readv(fd_, iov, iovCount);
     if(bytes < 0) {
-        throw exception::SocketException("Readv error(fd: " + std::to_string(*fd_) + ")", errno);
+        throw exception::SocketException("Readv error(fd: " + std::to_string(fd_) + ")", errno);
     }
     return bytes;
 }

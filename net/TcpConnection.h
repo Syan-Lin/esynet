@@ -11,11 +11,11 @@
 #include "utils/NonCopyable.h"
 #include "utils/StringPiece.h"
 #include "utils/Timestamp.h"
-#include "net/base/InetAddress.h"
+#include "net/base/NetAddress.h"
 
 namespace esynet {
 
-class Reactor;
+class Looper;
 
 class TcpConnection : utils::NonCopyable {
 private:
@@ -40,25 +40,23 @@ public:
     static void defaultHighWaterMarkCallback(TcpConnection&, size_t);
 
 public:
-    TcpConnection(Reactor&, utils::StringPiece, Socket, const InetAddress& local, const InetAddress& peer);
+    TcpConnection(Looper&, utils::StringPiece, Socket, const NetAddress& local, const NetAddress& peer);
     ~TcpConnection();
 
     const std::string&     name()         const;
-    const InetAddress&     localAddress() const;
-    const InetAddress&     peerAddress()  const;
+    const NetAddress&      localAddress() const;
+    const NetAddress&      peerAddress()  const;
     bool                   connected()    const;
     bool                   disconnected() const;
     std::optional<TcpInfo> tcpInfo()      const;
     std::string            tcpInfoStr()   const;
-    Reactor&               reactor()      const;
+    Looper&                looper()       const;
 
     void send(const void*, size_t);
     void send(const utils::StringPiece);
     void shutdown();
     void forceClose();
     void setTcpNoDelay(bool);
-    void enableRead();
-    void disableRead();
 
     void setContext(const std::any&);
     const std::any& getContext() const;
@@ -78,16 +76,17 @@ public:
 private:
     void handleRead();
     void handleWrite();
+    void handleClose();
     std::string stateToString() const;
 
 private:
-    Reactor& reactor_;
+    Looper& looper_;
     const std::string name_;
 
     Socket socket_;
     std::atomic<State> state_;
-    const InetAddress localAddr_;
-    const InetAddress peerAddr_;
+    const NetAddress localAddr_;
+    const NetAddress peerAddr_;
     Event event_;
 
     ConnectionCallback connectionCb_;

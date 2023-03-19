@@ -19,7 +19,7 @@ namespace esynet {
 class Event;
 
 /* 警告： 不要设为全局变量 */
-class Reactor : public utils::NonCopyable {
+class Looper : public utils::NonCopyable {
 public:
     static const int kPollTimeMs;
 
@@ -36,8 +36,8 @@ private:
     void wakeup();
 
 public:
-    Reactor(bool useEpoll = true);
-    ~Reactor();
+    Looper(bool useEpoll = true);
+    ~Looper();
 
     void start();
     void stop();
@@ -51,7 +51,7 @@ public:
     Timer::ID runEvery(double interval, Timer::Callback);
     void cancelTimer(Timer::ID);
 
-    /* 由该 Reactor 所属的线程来调用传入函数 */
+    /* 由该 Looper 所属的线程来调用传入函数 */
     void run(Function);       /* 立刻唤醒执行 */
     void queue(Function);     /* 等待唤醒，稍后执行 */
 

@@ -10,7 +10,7 @@ namespace esynet::poller {
 
 class PollPoller : public Poller {
 public:
-    PollPoller(Reactor& reactor);
+    PollPoller(Looper& looper);
     ~PollPoller() override = default;
 
     utils::Timestamp poll(EventList&, int timeoutMs) override;

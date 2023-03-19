@@ -3,10 +3,10 @@
 #include <thread>
 
 using esynet::ReactorThreadPoll;
-using esynet::Reactor;
+using esynet::Looper;
 
-ReactorThreadPoll::ReactorThreadPoll(Reactor& reactor):
-                mainReactor_(reactor), start_(false), index_(0), threadNum_(0) {}
+ReactorThreadPoll::ReactorThreadPoll(Looper& looper):
+                mainReactor_(looper), start_(false), index_(0), threadNum_(0) {}
 ReactorThreadPoll::~ReactorThreadPoll() { stop(); }
 
 void ReactorThreadPoll::start() {
@@ -17,7 +17,7 @@ void ReactorThreadPoll::start() {
             /* 线程任务 */
             {
                 std::unique_lock<std::mutex> lock(mutex_);
-                reactors_.emplace_back(std::make_unique<Reactor>());
+                reactors_.emplace_back(std::make_unique<Looper>());
             }
             if(initCb_) {
                 initCb_(*reactors_.back());
@@ -40,13 +40,13 @@ void ReactorThreadPoll::stop() {
     start_ = false;
 }
 
-Reactor* ReactorThreadPoll::getNext() {
+Looper* ReactorThreadPoll::getNext() {
     if(!start_ || reactors_.empty()) return &mainReactor_;
     if(index_ == reactors_.size()) index_ = 0;
     return reactors_[index_++].get();
 }
 /* 线程数量常数级，没有必要优化 */
-Reactor* ReactorThreadPoll::getLightest() {
+Looper* ReactorThreadPoll::getLightest() {
     if(!start_ || reactors_.empty()) return &mainReactor_;
     int min = INT_MAX, index = 0;
     for(int i = 0; i < reactors_.size(); i++) {
@@ -58,9 +58,9 @@ Reactor* ReactorThreadPoll::getLightest() {
     }
     return reactors_[index].get();
 }
-std::vector<Reactor*> ReactorThreadPoll::getAllReactors() {
+std::vector<Looper*> ReactorThreadPoll::getAllReactors() {
     if(!start_ || reactors_.empty()) return {&mainReactor_};
-    std::vector<Reactor*> reactors;
+    std::vector<Looper*> reactors;
     for(int i = 0; i < reactors_.size(); i++) {
         reactors.emplace_back(reactors_[i].get());
     }

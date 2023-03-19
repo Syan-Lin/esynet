@@ -2,15 +2,15 @@
 
 /* Local headers */
 #include "logger/Logger.h"
-#include "net/base/InetAddress.h"
-#include "net/base/Reactor.h"
+#include "net/base/NetAddress.h"
+#include "net/base/Looper.h"
 #include "exception/NetworkException.h"
 
 using esynet::Acceptor;
 
-Acceptor::Acceptor(Reactor& reactor, const InetAddress& localAddr):
-                    reactor_(reactor),
-                    acceptEvent_(reactor, acceptSocket_.fd()),
+Acceptor::Acceptor(Looper& looper, const NetAddress& localAddr):
+                    looper_(looper),
+                    acceptEvent_(looper, acceptSocket_.fd()),
                     listen_(false),
                     port_(localAddr.port()) {
     acceptSocket_.setReuseAddr(true);
@@ -24,7 +24,7 @@ Acceptor::Acceptor(Reactor& reactor, const InetAddress& localAddr):
 }
 
 Acceptor::~Acceptor() {
-    acceptEvent_.disableAll();
+    acceptEvent_.cancel();
 }
 
 void Acceptor::setAcceptCallback(AcceptCallback cb) {
@@ -34,7 +34,7 @@ bool Acceptor::listening() const {
     return listen_;
 }
 void Acceptor::listen() {
-    reactor_.assert();
+    looper_.assert();
 
     listen_ = true;
     acceptSocket_.listen();
@@ -42,9 +42,9 @@ void Acceptor::listen() {
 }
 
 void Acceptor::onAccept() {
-    reactor_.assert();
+    looper_.assert();
 
-    InetAddress peerAddr;
+    NetAddress peerAddr;
     try {
         Socket connSocket = acceptSocket_.accept(peerAddr);
         if(acceptCb_) {

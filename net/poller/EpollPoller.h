@@ -12,7 +12,7 @@ class EpollPoller : public Poller {
 public:
     static const int kInitEventListSize;
 public:
-    EpollPoller(Reactor&);
+    EpollPoller(Looper&);
     ~EpollPoller() override;
 
     utils::Timestamp poll(EventList&, int timeoutMs) override;

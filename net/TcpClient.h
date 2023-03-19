@@ -7,13 +7,14 @@
 #include "utils/StringPiece.h"
 #include "net/TcpConnection.h"
 #include "net/base/Socket.h"
-#include "net/base/InetAddress.h"
+#include "net/base/NetAddress.h"
 
 namespace esynet {
 
-class Reactor;
+class Looper;
 class Connector;
 
+/* 非线程安全 */
 class TcpClient : public utils::NonCopyable {
 private:
     using TcpConnectionPtr      = TcpConnection::TcpConnectionPtr;
@@ -25,33 +26,33 @@ private:
     using ErrorCallback         = TcpConnection::ErrorCallback;
 
 public:
-    TcpClient(InetAddress addr = 8080,
-              utils::StringPiece name = "Client",
-              bool useEpoll = true);
+    TcpClient(NetAddress, utils::StringPiece name = "Client", bool useEpoll = true);
     ~TcpClient();
 
     void connect();
     void disconnect();
-    void stop();
+    void reconnect();
+    void stopConnecting();
 
+    /* 线程安全 */
     TcpConnectionPtr    connection() const;
-    Reactor&            reactor();
+    Looper&            looper();
     const std::string&  name() const;
 
-    /* 非线程安全 */
     void setConnectionCallback(const ConnectionCallback&);
     void setMessageCallback(const MessageCallback&);
     void setWriteCompleteCallback(const WriteCompleteCallback&);
     void setCloseCallback(const CloseCallback&);
     void setErrorCallback(const ErrorCallback&);
 
-    void start(); /* 线程安全，开始监听 */
+    void start();
+    void shutdown();
 
 private:
-    void onConnection(Socket);
+    void onConnection(Socket, NetAddress);
     void removeConnection(TcpConnection&);
 
-    Reactor reactor_;
+    Looper looper_;
     ConnectorPtr connector_;
     TcpConnectionPtr connection_;
 
@@ -62,8 +63,6 @@ private:
     WriteCompleteCallback writeCompleteCb_;
 
     const std::string name_;
-    bool retry_;
-    bool tryToConnect_;
 };
 
 } /* namespace esynet */

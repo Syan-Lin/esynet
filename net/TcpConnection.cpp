@@ -2,46 +2,47 @@
 
 /* Local headers */
 #include "logger/Logger.h"
-#include "net/base/InetAddress.h"
-#include "net/base/Reactor.h"
+#include "net/base/NetAddress.h"
+#include "net/base/Looper.h"
 #include "exception/SocketException.h"
 
 using esynet::TcpConnection;
-using esynet::InetAddress;
-using esynet::Reactor;
+using esynet::NetAddress;
+using esynet::Looper;
 using std::optional;
 using TcpInfo = esynet::Socket::TcpInfo;
 
 void TcpConnection::defaultConnectionCallback(TcpConnection& conn) {
-    LOG_DEBUG("Connection from {}:{}", conn.peerAddress().ip());
+    LOG_INFO("Connection from {}:{}", conn.peerAddress().ip(), conn.peerAddress().port());
 }
 void TcpConnection::defaultMessageCallback(TcpConnection& conn, utils::Buffer& buf, utils::Timestamp) {
-    LOG_DEBUG("Message from {} is \"{}\"", conn.peerAddress().ip(), buf.retrieveAllAsString());
+    LOG_INFO("Message from {} is \"{}\"", conn.peerAddress().ip(), buf.retrieveAllAsString());
 }
 void TcpConnection::defaultCloseCallback(TcpConnection& conn) {
-    LOG_DEBUG("Disconnection {}", conn.peerAddress().ip());
+    LOG_INFO("Disconnection {}:{}", conn.peerAddress().ip(), conn.peerAddress().port());
 }
 void TcpConnection::defaultErrorCallback(TcpConnection& conn) {
-    LOG_DEBUG("Error from {}", conn.peerAddress().ip());
+    LOG_INFO("Error from {}:{}", conn.peerAddress().ip(), conn.peerAddress().port());
+    conn.forceClose();
 }
 void TcpConnection::defaultWriteCompleteCallback(TcpConnection& conn) {
-    LOG_DEBUG("Write complete to {}", conn.peerAddress().ip());
+    LOG_INFO("Write complete to {}", conn.peerAddress().ip());
 }
-void TcpConnection::defaultHighWaterMarkCallback(TcpConnection& conn, size_t) {
-    LOG_DEBUG("{} reaches high water mark", conn.peerAddress().ip());
+void TcpConnection::defaultHighWaterMarkCallback(TcpConnection& conn, size_t size) {
+    LOG_WARN("{} reaches high water mark {}", conn.peerAddress().ip(), size);
 }
 
-TcpConnection::TcpConnection(Reactor& reactor,
+TcpConnection::TcpConnection(Looper& looper,
                             utils::StringPiece name,
                             Socket sock,
-                            const InetAddress& localAddr,
-                            const InetAddress& peerAddr):
-                            reactor_(reactor),
+                            const NetAddress& localAddr,
+                            const NetAddress& peerAddr):
+                            looper_(looper),
                             name_(name.asString()),
                             socket_(sock),
                             localAddr_(localAddr),
                             peerAddr_(peerAddr),
-                            event_(reactor, sock.fd()) {
+                            event_(looper, sock.fd()) {
     state_ = kConnecting;
     highWaterMark_ = 64_MB;
     connectionCb_    = std::bind(&TcpConnection::defaultConnectionCallback, std::placeholders::_1);
@@ -54,9 +55,15 @@ TcpConnection::TcpConnection(Reactor& reactor,
     closeCb_         = std::bind(&TcpConnection::defaultCloseCallback, std::placeholders::_1);
     errorCb_         = std::bind(&TcpConnection::defaultErrorCallback, std::placeholders::_1);
 
-    event_.setReadCallback(std::bind(&TcpConnection::handleRead, this));
-    event_.setWriteCallback(std::bind(&TcpConnection::handleWrite, this));
-    event_.setCloseCallback(std::bind(&TcpConnection::disconnectComplete, this));
+    event_.setReadCallback([this] {
+        handleRead();
+    });
+    event_.setWriteCallback([this] {
+        handleWrite();
+    });
+    event_.setCloseCallback([this] {
+        handleClose();
+    });
     event_.setErrorCallback([this] {
         errorCb_(*this);
     });
@@ -65,52 +72,52 @@ TcpConnection::TcpConnection(Reactor& reactor,
 TcpConnection::~TcpConnection() {}
 
 const std::string& TcpConnection::name()         const { return name_; }
-Reactor&           TcpConnection::reactor()      const { return reactor_; }
+Looper&            TcpConnection::looper()       const { return looper_; }
 optional<TcpInfo>  TcpConnection::tcpInfo()      const { return socket_.getTcpInfo(); }
 bool               TcpConnection::connected()    const { return state_ == kConnected; }
 std::string        TcpConnection::tcpInfoStr()   const { return socket_.getTcpInfoString(); }
-const InetAddress& TcpConnection::peerAddress()  const { return peerAddr_; }
-const InetAddress& TcpConnection::localAddress() const { return localAddr_; }
+const NetAddress&  TcpConnection::peerAddress()  const { return peerAddr_; }
+const NetAddress&  TcpConnection::localAddress() const { return localAddr_; }
 bool               TcpConnection::disconnected() const { return state_ == kDisconnected; }
 const std::any&    TcpConnection::getContext()   const { return context_; }
 
 void TcpConnection::setTcpNoDelay(bool on) {
-    reactor_.run([this, on]{
+    looper_.run([this, on]{
         socket_.setTcpNoDelay(on);
     });
 }
 void TcpConnection::setContext(const std::any& context) {
-    reactor_.run([this, &context] {
+    looper_.run([this, &context] {
         context_ = context;
     });
 }
 void TcpConnection::setConnectionCallback(const ConnectionCallback& cb) {
-    reactor_.run([this, &cb] {
+    looper_.run([this, &cb] {
         connectionCb_ = std::move(cb);
     });
 }
 void TcpConnection::setMessageCallback(const MessageCallback& cb) {
-    reactor_.run([this, &cb] {
+    looper_.run([this, &cb] {
         messageCb_ = std::move(cb);
     });
 }
 void TcpConnection::setWriteCompleteCallback(const WriteCompleteCallback& cb) {
-    reactor_.run([this, &cb] {
+    looper_.run([this, &cb] {
         writeCompleteCb_ = std::move(cb);
     });
 }
 void TcpConnection::setCloseCallback(const CloseCallback& cb) {
-    reactor_.run([this, &cb] {
+    looper_.run([this, &cb] {
         closeCb_ = std::move(cb);
     });
 }
 void TcpConnection::setErrorCallback(const ErrorCallback& cb) {
-    reactor_.run([this, &cb] {
+    looper_.run([this, &cb] {
         errorCb_ = std::move(cb);
     });
 }
 void TcpConnection::setHighWaterMarkCallback(const HighWaterMarkCallback& cb, size_t mark) {
-    reactor_.run([this, &cb, mark] {
+    looper_.run([this, &cb, mark] {
         highWaterMarkCb_ = std::move(cb);
         highWaterMark_   = mark;
     });
@@ -121,7 +128,8 @@ void TcpConnection::send(const utils::StringPiece msg) {
 }
 void TcpConnection::send(const void* data, size_t len) {
     if (state_ != kConnected) return;
-    reactor_.run([&] {
+    LOG_DEBUG("Send {} bytes to {}", len, peerAddress().ip());
+    looper_.run([&] {
         size_t wrote = 0;
         bool error = false;
 
@@ -157,7 +165,7 @@ void TcpConnection::send(const void* data, size_t len) {
 void TcpConnection::shutdown() {
     if (state_ != kConnected) return;
     state_ = kDisconnecting;
-    reactor_.run([this] {
+    looper_.run([this] {
         if(event_.writable()) {
             LOG_WARN("Try to shutdown while data has not been send");
             return;
@@ -168,44 +176,27 @@ void TcpConnection::shutdown() {
 void TcpConnection::forceClose() {
     if (state_ == kConnecting || state_ == kDisconnected) return;
     state_ = kDisconnecting;
-    reactor_.run([this] {
+    looper_.run([this] {
         disconnectComplete();
-    });
-}
-void TcpConnection::enableRead() {
-    reactor_.run([this] {
-        if(event_.readable()) return;
-        event_.enableRead();
-    });
-}
-void TcpConnection::disableRead() {
-    reactor_.run([this] {
-        if(!event_.readable()) {
-            LOG_WARN("Try to disable read while data has not been read");
-            return;
-        }
-        event_.disableRead();
     });
 }
 
 void TcpConnection::connectComplete() {
-    reactor_.assert();
+    looper_.assert();
 
     state_ = kConnected;
     event_.enableRead();
     connectionCb_(*this);
 }
 void TcpConnection::disconnectComplete() {
-    reactor_.assert();
+    looper_.assert();
 
     state_ = kDisconnected;
-    event_.disableAll();
-    reactor_.removeEvent(event_);
-    closeCb_(*this);
+    handleClose();
 }
 
 void TcpConnection::handleRead() {
-    reactor_.assert();
+    looper_.assert();
 
     try {
         ssize_t bytes = readBuffer_.readSocket(socket_);
@@ -221,7 +212,7 @@ void TcpConnection::handleRead() {
 }
 // 当send函数一次发不完时，会注册监听可写事件，在可写时执行该函数继续发送
 void TcpConnection::handleWrite() {
-    reactor_.assert();
+    looper_.assert();
 
     if(event_.writable()) {
         try {
@@ -230,7 +221,7 @@ void TcpConnection::handleWrite() {
             if(sendBuffer_.readableBytes() == 0) {
                 event_.disableWrite();
                 if(writeCompleteCb_) {
-                    reactor_.queue([this] {
+                    looper_.queue([this] {
                         writeCompleteCb_(*this);
                     });
                 }
@@ -244,4 +235,11 @@ void TcpConnection::handleWrite() {
     } else {
         LOG_ERROR("TcpConnection::handleWrite() can't write");
     }
+}
+void TcpConnection::handleClose() {
+    looper_.assert();
+
+    event_.cancel();
+    socket_.close();
+    closeCb_(*this);
 }

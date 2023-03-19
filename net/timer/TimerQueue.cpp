@@ -4,7 +4,7 @@
 #include <sys/timerfd.h>
 
 /* Local headers */
-#include "net/base/Reactor.h"
+#include "net/base/Looper.h"
 #include "logger/Logger.h"
 #include "utils/ErrorInfo.h"
 
@@ -34,15 +34,15 @@ void TimerQueue::updateTimerFd() {
     }
 }
 
-TimerQueue::TimerQueue(Reactor& reactor):
-                reactor_(reactor),
+TimerQueue::TimerQueue(Looper& looper):
+                looper_(looper),
                 timerFd_(createTimerFd()),
-                timerEvent_(reactor, timerFd_) {
+                timerEvent_(looper, timerFd_) {
     timerEvent_.setReadCallback(std::bind(&TimerQueue::handle, this));
     timerEvent_.enableRead();
 }
 TimerQueue::~TimerQueue() {
-    reactor_.removeEvent(timerEvent_);
+    looper_.removeEvent(timerEvent_);
     close(timerFd_);
 }
 
@@ -50,7 +50,7 @@ Timer::ID TimerQueue::addTimer(Timer::Callback callback, Timestamp expiration, d
     TimerPtr tp = std::make_unique<Timer>(callback, expiration, interval);
     Timer::ID id = tp->id();
 
-    reactor_.run([this, expiration, &tp] {
+    looper_.run([this, expiration, &tp] {
         timerMap_[expiration] = std::move(tp);
         timerPositionMap_[timerMap_[expiration]->id()] = expiration;
         updateTimerFd();
@@ -59,7 +59,7 @@ Timer::ID TimerQueue::addTimer(Timer::Callback callback, Timestamp expiration, d
     return id;
 }
 void TimerQueue::cancel(Timer::ID id) {
-    reactor_.run([this, id] {
+    looper_.run([this, id] {
         auto iter = timerPositionMap_.find(id);
         if(iter != timerPositionMap_.end()) {
             timerMap_.erase(iter->second);

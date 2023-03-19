@@ -11,15 +11,15 @@
 
 namespace esynet {
 
-class InetAddress;
-class Reactor;
+class NetAddress;
+class Looper;
 
 class Acceptor : public utils::NonCopyable {
 private:
-    using AcceptCallback = std::function<void(Socket, const InetAddress&)>;
+    using AcceptCallback = std::function<void(Socket, const NetAddress&)>;
 
 public:
-    Acceptor(Reactor&, const InetAddress& localAddr);
+    Acceptor(Looper&, const NetAddress& localAddr);
     ~Acceptor();
 
     void setAcceptCallback(AcceptCallback);
@@ -29,7 +29,7 @@ public:
 private:
     void onAccept();
 
-    Reactor& reactor_;
+    Looper& looper_;
     Socket acceptSocket_;
     Event acceptEvent_;
     AcceptCallback acceptCb_;

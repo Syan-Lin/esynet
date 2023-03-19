@@ -11,8 +11,22 @@ using esynet::utils::Timestamp;
 
 const int EpollPoller::kInitEventListSize = 16;
 
-EpollPoller::EpollPoller(Reactor& reactor):
-                    Poller(reactor),
+std::string optStr(int op) {
+    switch (op) {
+        case EPOLL_CTL_ADD:
+            return "ADD";
+        case EPOLL_CTL_DEL:
+            return "DEL";
+        case EPOLL_CTL_MOD:
+            return "MOD";
+        default:
+            return "Unknown Operation";
+    }
+}
+
+
+EpollPoller::EpollPoller(Looper& looper):
+                    Poller(looper),
                     epollFd_(epoll_create1(EPOLL_CLOEXEC)),
                     epollEvents_(kInitEventListSize) {
     if(epollFd_ < 0) {
@@ -37,7 +51,6 @@ Timestamp EpollPoller::poll(EventList& activeEvents, int timeoutMs) {
 }
 
 void EpollPoller::updateEvent(Event& event) {
-    LOG_DEBUG("Update event(fd: {}, events: {})", event.fd(), event.listenedEvent());
     if(event.index() < 0) {
         if(event.listenedEvent() < 0) return;
         /* 添加至列表 */
@@ -83,11 +96,10 @@ void EpollPoller::epollUpdate(int operation, Event& event) {
     EpollEvent epollEvent;
     epollEvent.events = event.listenedEvent();
     epollEvent.data.fd = event.fd();
+    LOG_DEBUG("epoll_ctl(op: {}, fd: {})", optStr(operation), event.fd());
     if(epoll_ctl(epollFd_, operation, event.fd(), &epollEvent) < 0) {
         LOG_ERROR("epoll_ctl(op: {}, fd: {}, errno: {}) error",
-                    operation, event.fd(), errnoStr(errno));
-        event.setHappenedEvent(errno);
-        event.handle();
+                    optStr(operation), event.fd(), errnoStr(errno));
     }
     if(operation == EPOLL_CTL_ADD) {
         epollEvents_.push_back(epollEvent);

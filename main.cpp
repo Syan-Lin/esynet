@@ -96,13 +96,13 @@ public:
 #include <fstream>
 #include "utils/PerformanceAnalyser.h"
 #include "logger/SyncLogger.h"
-#include "net/Reactor.h"
+#include "net/Looper.h"
 #include "net/Event.h"
 #include <sys/timerfd.h>
 
 std::string gStrForTest;
 
-// void timeOut(Reactor& loop) {
+// void timeOut(Looper& loop) {
 //     gStrForTest += "t";
 //     loop.stop();
 // }
@@ -114,7 +114,7 @@ int main() {
     // howlong.it_value.tv_sec = 2;
     // timerfd_settime(timer_fd, 0, &howlong, NULL);
 
-    Reactor loop(false);
+    Looper loop(false);
     Event event(loop, 1);
     // event.setReadCallback(std::bind(timeOut, std::ref(loop)));
     // event.enableReading(); /* 会委托 loop 更新 poll */

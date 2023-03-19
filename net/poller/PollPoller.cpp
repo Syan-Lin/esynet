@@ -8,7 +8,7 @@
 using esynet::poller::PollPoller;
 using esynet::utils::Timestamp;
 
-PollPoller::PollPoller(Reactor& reactor) : Poller(reactor) {}
+PollPoller::PollPoller(Looper& looper) : Poller(looper) {}
 
 Timestamp PollPoller::poll(EventList& activeEvents, int timeoutMs) {
     int numEvents = ::poll(&*pollFds_.begin(), pollFds_.size(), timeoutMs);
@@ -61,8 +61,7 @@ void PollPoller::removeEvent(Event& event) {
     int index = event.index();
     if(index >= pollFds_.size() || index < 0) {
         LOG_ERROR("Event(fd: {}) index out of range", event.fd());
-    }
-    if(index == pollFds_.size() - 1) {
+    } else if(index == pollFds_.size() - 1) {
         pollFds_.pop_back();
     } else {
         int lastFd = pollFds_.back().fd;

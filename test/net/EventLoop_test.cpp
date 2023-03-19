@@ -3,12 +3,12 @@
 #include <doctest/doctest.h>
 #include <functional>
 #include <sys/timerfd.h>
-#include "net/Reactor.h"
+#include "net/Looper.h"
 #include "net/Event.h"
 
 using namespace esynet;
 
-/* 使用 time_fd 来测试 Reactor 及其相关类 */
+/* 使用 time_fd 来测试 Looper 及其相关类 */
 
 std::string gStrForTest;
 
@@ -24,17 +24,17 @@ void writeCallBack(Event& event) {
 }
 void errorCallBack(Event& event) {
     gStrForTest += "e";
-    event.disableAll();
-    event.disableAll();
+    event.cancel();
+    event.cancel();
 }
-void stopLoop(Reactor& loop) {
+void stopLoop(Looper& loop) {
     loop.stop();
 }
 
 TEST_CASE("EventLoop_Test"){
     SUBCASE("PollPoller") {
         gStrForTest.clear();
-        Reactor loop(false);
+        Looper loop(false);
 
         /* 用于关闭loop */
         int close_fd = timerfd_create(CLOCK_MONOTONIC, TFD_NONBLOCK | TFD_CLOEXEC);
@@ -81,7 +81,7 @@ TEST_CASE("EventLoop_Test"){
 
     SUBCASE("EpollPoller") {
         gStrForTest.clear();
-        Reactor loop;
+        Looper loop;
 
         /* 用于关闭loop */
         int close_fd = timerfd_create(CLOCK_MONOTONIC, TFD_NONBLOCK | TFD_CLOEXEC);

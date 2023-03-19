@@ -7,41 +7,40 @@
 /* Local headers */
 #include "net/base/Socket.h"
 #include "utils/NonCopyable.h"
-#include "net/base/InetAddress.h"
+#include "net/base/NetAddress.h"
 
 namespace esynet {
 
-class InetAddress;
-class Reactor;
+class NetAddress;
+class Looper;
 class Event;
 
 class Connector : public utils::NonCopyable {
 private:
-    using ConnectCallback = std::function<void(Socket)>;
+    using ConnectCallback = std::function<void(Socket, NetAddress)>;
     enum State { kDisconnected, kConnecting, kConnected };
 
     static const int kMaxRetryDelayMs;
     static const int kInitRetryDelayMs;
 
 public:
-    Connector(Reactor&, const InetAddress& serverAddr);
+    Connector(Looper&, const NetAddress& serverAddr);
     ~Connector();
 
     void start();
     void restart();
     void stop();
 
-    const InetAddress& serverAddr() const;
     void setConnectCallback(ConnectCallback);
 
 private:
-    void onConnect(Socket);
+    void onConnect(Socket, NetAddress);
     void checkConnect(Socket);
     void retry(Socket);
 
-    Reactor& reactor_;
-    InetAddress serverAddr_;
-    bool tryToConnect_;
+    Looper& looper_;
+    NetAddress serverAddr_;
+    bool couldConnect;
     State state_;
     std::unique_ptr<Event> event_;
     ConnectCallback connectCb_;

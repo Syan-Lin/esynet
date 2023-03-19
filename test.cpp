@@ -4,8 +4,8 @@
 
 #include "net/timer/Timer.h"
 #include "net/timer/TimerQueue.h"
-#include "net/Reactor.h"
-#include "net/Event.h"
+#include "net/base/Looper.h"
+#include "net/base/Event.h"
 #include "net/thread/ReactorThreadPoll.h"
 #include "net/poller/EpollPoller.h"
 #include "net/base/Socket.h"
@@ -22,7 +22,7 @@ using namespace esynet::timer;
 using namespace esynet::utils;
 
 int main() {
-    Reactor loop;
+    Looper loop;
     ReactorThreadPoll poll(loop);
 
     Socket sock;

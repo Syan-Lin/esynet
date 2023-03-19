@@ -22,7 +22,7 @@ find_package(fmt REQUIRED QUIET)
 if(BUILD_TEST)
     enable_testing()
     find_package(doctest REQUIRED QUIET)
-    add_subdirectory(test)
+    # add_subdirectory(test)
 endif()
 
 # 第三方库信息

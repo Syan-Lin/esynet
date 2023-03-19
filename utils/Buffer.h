@@ -266,14 +266,6 @@ public:
             writerIndex_ = buffer_.size();
             append(extraBuf, n - writable);
         }
-        // if (n < 0) {
-        //     error = errno;
-        // } else if (n <= writable) {
-        //     writerIndex_ += n;
-        // } else {
-        //     writerIndex_ = buffer_.size();
-        //     append(extraBuf, n - writable);
-        // }
         return n;
     }
 

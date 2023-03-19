@@ -7,12 +7,13 @@
 #include "utils/StringPiece.h"
 #include "net/TcpConnection.h"
 #include "net/base/Socket.h"
-#include "net/base/InetAddress.h"
+#include "net/base/NetAddress.h"
 
 namespace esynet {
 
-class Reactor;
+class Looper;
 
+/* 非线程安全 */
 class TcpServer : public utils::NonCopyable {
 private:
     using TcpConnectionPtr      = TcpConnection::TcpConnectionPtr;
@@ -23,13 +24,13 @@ private:
     using MessageCallback       = TcpConnection::MessageCallback;
     using CloseCallback         = TcpConnection::CloseCallback;
     using ErrorCallback         = TcpConnection::ErrorCallback;
-    using ThreadInitCallback    = std::function<void(Reactor&)>;
+    using ThreadInitCallback    = std::function<void(Looper&)>;
 
 public:
     enum Strategy { kRoundRobin, kLightest };
 
 public:
-    TcpServer(InetAddress addr = 8080,
+    TcpServer(NetAddress addr = 8080,
               utils::StringPiece name = "Server",
               bool useEpoll = true);
     ~TcpServer();
@@ -38,7 +39,7 @@ public:
     const std::string& ip()   const;
     const std::string& name() const;
     const int          port() const;
-    Reactor&           reactor();
+    Looper&           looper();
 
     void setConnectionCallback(const ConnectionCallback&);
     void setMessageCallback(const MessageCallback&);
@@ -55,10 +56,10 @@ public:
     void shutdown();
 
 private:
-    void onConnection(Socket, const InetAddress&);
+    void onConnection(Socket, const NetAddress&);
     void removeConnection(TcpConnection& conn);
 
-    Reactor reactor_;
+    Looper looper_;
     const int port_;
     const std::string ip_;
     const std::string name_;

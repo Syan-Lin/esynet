@@ -2,7 +2,7 @@
 
 /* Local headers */
 #include "logger/Logger.h"
-#include "net/base/Reactor.h"
+#include "net/base/Looper.h"
 #include "net/base/Event.h"
 #include "utils/ErrorInfo.h"
 #include "exception/NetworkException.h"
@@ -11,10 +11,10 @@ using esynet::Connector;
 const int Connector::kMaxRetryDelayMs  = 30 * 1000;
 const int Connector::kInitRetryDelayMs = 500;
 
-Connector::Connector(Reactor& reactor, const InetAddress& serverAddr):
-                    reactor_(reactor),
+Connector::Connector(Looper& looper, const NetAddress& serverAddr):
+                    looper_(looper),
                     serverAddr_(serverAddr),
-                    tryToConnect_(false),
+                    couldConnect(true),
                     state_(kDisconnected),
                     retryDelayMs_(kInitRetryDelayMs) {}
 
@@ -25,11 +25,11 @@ void Connector::setConnectCallback(ConnectCallback cb) {
 }
 
 void Connector::start() {
-    reactor_.assert();
+    looper_.assert();
 
-    if(tryToConnect_) return;
+    if(!couldConnect) return;
+    couldConnect = false;
 
-    tryToConnect_ = true;
     Socket socket;
     try {
         socket.connect(serverAddr_);
@@ -52,43 +52,41 @@ void Connector::start() {
 }
 
 void Connector::stop() {
-    reactor_.assert();
+    looper_.assert();
 
-    if(!tryToConnect_) return;
+    if(!couldConnect) return;
+    couldConnect = true;
 
-    tryToConnect_ = false;
-    if(event_) event_->disableAll();
-    event_.reset();
+    if(event_) event_->cancel();
     state_ = kDisconnected;
 }
 
 void Connector::restart() {
-    reactor_.assert();
+    looper_.assert();
 
+    couldConnect = true;
     state_ = kDisconnected;
     retryDelayMs_ = kInitRetryDelayMs;
-    tryToConnect_ = true;
     start();
 }
 
 void Connector::retry(Socket socket) {
-    reactor_.assert();
+    looper_.assert();
 
+    couldConnect = true;
     socket.close();
     state_ = kDisconnected;
-    if(tryToConnect_) {
-        reactor_.runAfter(retryDelayMs_, [this] {
-            start();
-        });
-        retryDelayMs_ = std::min(retryDelayMs_ * 2, kMaxRetryDelayMs);
-    }
+    looper_.runAfter(retryDelayMs_, [this] {
+        start();
+    });
+    retryDelayMs_ = std::min(retryDelayMs_ * 2, kMaxRetryDelayMs);
 }
 
 void Connector::checkConnect(Socket socket) {
-    reactor_.assert();
+    looper_.assert();
 
     state_ = kConnecting;
-    event_ = std::make_unique<Event>(reactor_, socket.fd());
+    event_ = std::make_unique<Event>(looper_, socket.fd());
 
     event_->setWriteCallback([this, socket] {
         if(state_ != kConnecting) return;
@@ -96,18 +94,14 @@ void Connector::checkConnect(Socket socket) {
         // 接下来要么将监听权交由TcpConnection
         // 要么重新创建套接字进行尝试
         // 该回调一个套接字至多执行一次
-        event_->disableAll();
-        event_.reset();
+        event_->cancel();
         // 可写表示连接完成，但不一定成功，仍然需要检查
-        auto err = Socket::getSocketError(socket);
-        if(err.has_value()) {
-            LOG_WARN("Connection error(err: {}) will retry", errnoStr(err.value()));
-            retry(socket);
-        } else if (Socket::isSelfConnect(socket)) {
-            LOG_ERROR("Connection self connect(err: {})", errnoStr(err.value()));
+        std::optional<NetAddress> peer = NetAddress::getPeerAddr(socket);
+        if(peer.has_value()) {
+            onConnect(socket, peer.value());
         } else {
-            // 连接成功
-            onConnect(socket);
+            LOG_WARN("Unable to connect to the destination address, will retry");
+            retry(socket);
         }
     });
     event_->setErrorCallback([this, socket] {
@@ -122,9 +116,9 @@ void Connector::checkConnect(Socket socket) {
     event_->enableWrite();
 }
 
-void Connector::onConnect(Socket socket) {
-    reactor_.assert();
+void Connector::onConnect(Socket socket, NetAddress peer) {
+    looper_.assert();
 
     state_ = kConnected;
-    connectCb_(socket);
+    connectCb_(socket, peer);
 }

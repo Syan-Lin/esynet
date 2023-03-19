@@ -10,7 +10,7 @@
 
 namespace esynet {
 
-class Reactor;
+class Looper;
 class Event;
 
 }
@@ -22,7 +22,7 @@ public:
     using EventList = std::vector<Event*>;
 
 public:
-    Poller(Reactor& reactor): reactor_(reactor) {};
+    Poller(Looper& looper): looper_(looper) {};
     virtual ~Poller() = default;
 
     virtual utils::Timestamp poll(EventList&, int timeoutMs) = 0;
@@ -33,7 +33,7 @@ protected:
     using EventMap = std::map<int, Event*>;
 
 protected:
-    Reactor& reactor_;
+    Looper& looper_;
     EventMap events_;
 };
 
