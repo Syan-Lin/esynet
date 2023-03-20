@@ -15,18 +15,19 @@ public:
     EpollPoller(Looper&);
     ~EpollPoller() override;
 
-    utils::Timestamp poll(EventList&, int timeoutMs) override;
+    auto poll(EventList&, int timeoutMs) -> utils::Timestamp override;
     void updateEvent(Event&) override;
     void removeEvent(Event&) override;
 
 private:
-    using EpollEvent = struct epoll_event;
-
-private:
     void epollUpdate(int operation, Event&);
     void fillActiveEvents(int numEvents, EventList&) const;
-    std::vector<EpollEvent> epollEvents_;
+
+private:
+    using EpollEvent = struct epoll_event;
+
     int epollFd_;
+    std::vector<EpollEvent> epollEvents_;
 };
 
 } /* namespace esynet::poller */

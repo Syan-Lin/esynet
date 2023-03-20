@@ -13,10 +13,7 @@ const int Connector::kInitRetryDelayMs = 500;
 
 Connector::Connector(Looper& looper, const NetAddress& serverAddr):
                     looper_(looper),
-                    serverAddr_(serverAddr),
-                    couldConnect(true),
-                    state_(kDisconnected),
-                    retryDelayMs_(kInitRetryDelayMs) {}
+                    serverAddr_(serverAddr) {}
 
 Connector::~Connector() {}
 

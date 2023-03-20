@@ -13,15 +13,16 @@ public:
     PollPoller(Looper& looper);
     ~PollPoller() override = default;
 
-    utils::Timestamp poll(EventList&, int timeoutMs) override;
+    auto poll(EventList&, int timeoutMs) -> utils::Timestamp override;
     void updateEvent(Event&) override;
     void removeEvent(Event&) override;
 
 private:
-    using PollFd = struct pollfd;
+    void fillActiveEvents(int numEvents, EventList&) const;
 
 private:
-    void fillActiveEvents(int numEvents, EventList&) const;
+    using PollFd = struct pollfd;
+
     std::vector<PollFd> pollFds_;
 };
 

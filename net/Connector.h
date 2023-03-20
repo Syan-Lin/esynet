@@ -40,11 +40,11 @@ private:
 
     Looper& looper_;
     NetAddress serverAddr_;
-    bool couldConnect;
-    State state_;
-    std::unique_ptr<Event> event_;
     ConnectCallback connectCb_;
-    int retryDelayMs_;
+    std::unique_ptr<Event> event_;
+    bool  couldConnect  {true};
+    State state_        {kDisconnected};
+    int   retryDelayMs_ {kInitRetryDelayMs};
 };
 
 } /* namespace esynet */

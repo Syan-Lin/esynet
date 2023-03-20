@@ -24,6 +24,13 @@ thread_local Looper* t_reactorInCurThread = nullptr;
 /* 超时时间 */
 const int Looper::kPollTimeMs = 3000;
 
+std::string tidToStr(std::thread::id tid) {
+    std::stringstream ss;
+    ss << tid;
+    std::string tidStr = ss.str();
+    tidStr = tidStr.substr(tidStr.length() - 4, 4);
+    return tidStr;
+}
 int createEventFd() {
     int fd = eventfd(0, EFD_NONBLOCK | EFD_CLOEXEC);
     if(fd == -1) {
@@ -33,12 +40,9 @@ int createEventFd() {
 }
 
 Looper::Looper(bool useEpoll):
-            stop_(false),
-            numOfEvents_(0),
-            isLooping_(false),
+            tid_(std::this_thread::get_id()),
             wakeupFd_(createEventFd()),
-            wakeupEvent_(*this, wakeupFd_),
-            tid_(std::this_thread::get_id()) {
+            wakeupEvent_(*this, wakeupFd_) {
     if(t_reactorInCurThread) {
         LOG_FATAL("Another Looper({:p}) exists in this thread({})",
                     static_cast<void*>(t_reactorInCurThread), tidToStr(tid_));
@@ -176,11 +180,3 @@ void Looper::assert() const {
 }
 bool Looper::isLooping() const { return isLooping_; }
 int Looper::numOfEvents() { numOfEvents_ = activeEvents_.size(); return numOfEvents_; }
-
-std::string Looper::tidToStr(std::thread::id tid) const {
-    std::stringstream ss;
-    ss << tid;
-    std::string tidStr = ss.str();
-    tidStr = tidStr.substr(tidStr.length() - 4, 4);
-    return tidStr;
-}

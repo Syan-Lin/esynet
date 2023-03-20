@@ -43,8 +43,6 @@ TcpConnection::TcpConnection(Looper& looper,
                             localAddr_(localAddr),
                             peerAddr_(peerAddr),
                             event_(looper, sock.fd()) {
-    state_ = kConnecting;
-    highWaterMark_ = 64_MB;
     connectionCb_    = std::bind(&TcpConnection::defaultConnectionCallback, std::placeholders::_1);
     messageCb_       = std::bind(&TcpConnection::defaultMessageCallback, std::placeholders::_1,
                                                                          std::placeholders::_2,
@@ -178,6 +176,15 @@ void TcpConnection::forceClose() {
     state_ = kDisconnecting;
     looper_.run([this] {
         disconnectComplete();
+    });
+}
+void TcpConnection::forceCloseWithoutCallback() {
+    if (state_ == kConnecting || state_ == kDisconnected) return;
+    state_ = kDisconnecting;
+    looper_.run([this] {
+        state_ = kDisconnected;
+        event_.cancel();
+        socket_.close();
     });
 }
 

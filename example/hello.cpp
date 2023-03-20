@@ -8,11 +8,13 @@ using namespace std;
 using namespace esynet;
 
 int main() {
-    thread client([] {
+    string msg;
+    thread client([&msg] {
         sleep(1);
         TcpClient client(1234, "HelloClient");
-        client.setMessageCallback([](TcpConnection& conn, utils::Buffer& buffer, utils::Timestamp time) {
-            LOG_INFO("Receive data from {}: {}", conn.peerAddress().ip(), buffer.retrieveAllAsString());
+        client.setMessageCallback([&msg](TcpConnection& conn, utils::Buffer& buffer, utils::Timestamp time) {
+            msg = buffer.retrieveAllAsString();
+            LOG_INFO("Receive data from {}: {}", conn.peerAddress().ip(), msg);
         });
         client.setCloseCallback([&client](TcpConnection& conn) {
             LOG_INFO("Connection from {} closed", conn.peerAddress().ip());
@@ -30,11 +32,15 @@ int main() {
     });
     server.setWriteCompleteCallback([&server](TcpConnection& conn){
         LOG_INFO("Send data to {} complete", conn.peerAddress().ip());
-        // server.shutdown();
+        server.shutdown();
     });
     server.start();
 
-    // client.join();
+    client.join();
+
+    cout << "==========Receive Message==========" << endl;
+    cout << msg << endl;
+    cout << "===================================" << endl;
 
     return 0;
 }

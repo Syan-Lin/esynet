@@ -8,9 +8,7 @@
 using esynet::Event;
 using esynet::Looper;
 
-Event::Event(Looper& looper, int fd):
-        looper_(looper), fd_(fd), listenedEvents_(-1),
-        happenedEvents_(0), indexInPoll_(-1) {}
+Event::Event(Looper& looper, int fd): looper_(looper), fd_(fd) {}
 
 void Event::handle() {
     if(happenedEvents_ & kCloseEvent) {

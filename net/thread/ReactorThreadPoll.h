@@ -12,7 +12,7 @@ namespace esynet {
 
 class ReactorThreadPoll {
 private:
-    using ReactorPtr = std::unique_ptr<Looper>;
+    using ReactorPtr   = std::unique_ptr<Looper>;
     using InitCallback = std::function<void(Looper&)>;
 
 public:
@@ -22,22 +22,22 @@ public:
     void start();
     void stop();
 
-    Looper* getNext();       /* 按顺序获取下一个 */
-    Looper* getLightest();   /* 获取负载最轻的一个 */
-    std::vector<Looper*> getAllReactors();
+    auto getNext()     -> Looper*;   /* 按顺序获取下一个 */
+    auto getLightest() -> Looper*;   /* 获取负载最轻的一个 */
+    auto getAllReactors() -> std::vector<Looper*>;
 
     void setInitCallback(InitCallback);
     void setThreadNum(size_t);
 
 private:
+    std::mutex mutex_;
+    bool   start_     {false};
+    int    index_     {0};
+    size_t threadNum_ {0};
     Looper& mainReactor_;
+    InitCallback initCb_;
     std::vector<ReactorPtr> reactors_;
     std::vector<std::thread> threads_;
-    InitCallback initCb_;
-    std::mutex mutex_;
-    bool start_;
-    int index_;
-    size_t threadNum_;
 };
 
 }

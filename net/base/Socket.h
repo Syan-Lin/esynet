@@ -18,7 +18,7 @@ class Socket {
 public:
     using TcpInfo = struct tcp_info;
 
-    static std::optional<int> getSocketError(Socket);
+    static auto getSocketError(Socket) -> std::optional<int>;
     static bool isSelfConnect(Socket);
 
 public:
@@ -33,16 +33,16 @@ public:
     void close();
     /* 每次accept一个连接，适合长连接服务 */
     [[nodiscard]]
-    Socket accept(NetAddress&);
+    auto accept(NetAddress&) -> Socket;
     [[nodiscard]]
-    Socket accept();
+    auto accept() -> Socket;
     /* 每次accept若干个连接，适合短连接服务 */
     [[nodiscard]]
-    std::vector<Socket> accept(std::vector<NetAddress>&);
+    auto accept(std::vector<NetAddress>&) -> std::vector<Socket>;
     void connect(const NetAddress&);
 
-    std::optional<TcpInfo> getTcpInfo() const;
-    std::string getTcpInfoString() const;
+    auto getTcpInfo() const -> std::optional<TcpInfo>;
+    auto getTcpInfoString() const -> std::string;
 
     void shutdownWrite();
     void shutdownRead();

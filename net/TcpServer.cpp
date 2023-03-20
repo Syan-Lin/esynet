@@ -16,10 +16,7 @@ TcpServer::TcpServer(NetAddress addr, utils::StringPiece name, bool useEpoll):
         ip_(addr.ip()),
         name_(name.asString()),
         acceptor_(looper_, addr),
-        threadPoll_(looper_),
-        strategy_(kRoundRobin),
-        started_(false),
-        connectionCount_(1) {
+        threadPoll_(looper_) {
     connectionCb_    = TcpConnection::defaultConnectionCallback;
     writeCompleteCb_ = TcpConnection::defaultWriteCompleteCallback;
     messageCb_       = TcpConnection::defaultMessageCallback;
@@ -46,9 +43,10 @@ void TcpServer::start() {
 void TcpServer::shutdown() {
     looper_.assert();
 
+    acceptor_.shutdown();
     for(auto& iter : connections_) {
         iter.second->looper().run([&iter] {
-            iter.second->disconnectComplete();
+            iter.second->forceCloseWithoutCallback();
         });
     }
     connections_.clear();

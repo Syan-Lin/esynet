@@ -90,15 +90,15 @@ public:
     }
 
 private:
-    std::string         getThreadId()             const;
-    const std::string&  getDate(const Timestamp&) const;
-    std::string         getTime(const Timestamp&) const;
+    auto getThreadId()             const -> std::string;
+    auto getDate(const Timestamp&) const -> const std::string&;
+    auto getTime(const Timestamp&) const -> std::string;
 
 private:
-    Timestamp time_;
+    int line_;
     const char* file_;
     const char* func_;
-    int line_;
+    Timestamp time_;
     LogLevel level_;
 };
 

@@ -58,11 +58,11 @@ private:
 private:
     void update();
 
-    Looper& looper_;
     const int fd_;
-    short listenedEvents_;
-    short happenedEvents_;
-    int indexInPoll_;
+    Looper& looper_;
+    int   indexInPoll_    {-1};
+    short listenedEvents_ {-1};
+    short happenedEvents_ {0};
 
     Callback readCallback_;
     Callback writeCallback_;

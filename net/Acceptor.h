@@ -25,16 +25,17 @@ public:
     void setAcceptCallback(AcceptCallback);
     bool listening() const;
     void listen();
+    void shutdown();
 
 private:
     void onAccept();
 
+    const int port_;
     Looper& looper_;
     Socket acceptSocket_;
-    Event acceptEvent_;
+    Event  acceptEvent_;
     AcceptCallback acceptCb_;
-    std::atomic<bool> listen_;
-    const int port_;
+    std::atomic<bool> listen_{false};
 };
 
 } /* namespace esynet */

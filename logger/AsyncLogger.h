@@ -41,10 +41,10 @@ private:
     std::atomic<bool> isWriting_;
     std::condition_variable cond_;
 
-    std::unique_ptr<utils::FileWriter> file_;
     BufferPtr bufferForLog_;            /* log 写入缓冲区 */
     BufferPtr bufferForWrite_;          /* 写入文件缓冲区 */
     BufferQueue extraBuffers_;          /* 面对突发大数据的缓冲区 */
+    std::unique_ptr<utils::FileWriter> file_;
 };
 
 } /* namespace esynet::logger */

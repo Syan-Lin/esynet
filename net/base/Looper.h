@@ -31,7 +31,6 @@ private:
     using Timestamp  = utils::Timestamp;
     using Function   = std::function<void()>;
 
-    std::string tidToStr(const std::thread::id) const;
     bool isInLoopThread() const;
     void wakeup();
 
@@ -42,13 +41,13 @@ public:
     void start();
     void stop();
 
-    Timestamp lastPollTime();
+    auto lastPollTime() -> Timestamp;
     void updateEvent(Event&);
     void removeEvent(Event&);
 
-    Timer::ID runAt(Timestamp timePoint, Timer::Callback);
-    Timer::ID runAfter(double delay, Timer::Callback);
-    Timer::ID runEvery(double interval, Timer::Callback);
+    auto runAt(Timestamp timePoint, Timer::Callback) -> Timer::ID;
+    auto runAfter(double delay, Timer::Callback) -> Timer::ID;
+    auto runEvery(double interval, Timer::Callback) -> Timer::ID;
     void cancelTimer(Timer::ID);
 
     /* 由该 Looper 所属的线程来调用传入函数 */
@@ -60,21 +59,21 @@ public:
     int numOfEvents();
 
 private:
+    EventList activeEvents_;
+    std::vector<Function> tasks_;
     std::unique_ptr<Poller> poller_;
     std::unique_ptr<TimerQueue> timerQueue_;
-    std::vector<Function> tasks_;
-    EventList activeEvents_;
 
     /* 状态 */
     Timestamp lastPollTime_;
-    std::atomic<bool> stop_;
-    std::atomic<bool> isLooping_;
-    std::atomic<int> numOfEvents_;
     const std::thread::id tid_;
+    std::atomic<int>  numOfEvents_ {0};
+    std::atomic<bool> stop_        {false};
+    std::atomic<bool> isLooping_   {false};
 
     /* 多线程 */
-    std::mutex mutex_;
     int wakeupFd_;
+    std::mutex mutex_;
     Event wakeupEvent_;
 };
 

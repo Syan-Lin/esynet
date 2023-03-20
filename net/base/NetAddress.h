@@ -31,10 +31,10 @@ public:
     NetAddress(unsigned short port = 0);  /* 用于服务端 */
     NetAddress(utils::StringArg ip, unsigned short port);
 
-    std::string ip() const;
+    auto ip() const -> std::string;
     int port() const;
 
-    const SockAddr& getSockAddr() const;
+    auto getSockAddr() const -> const SockAddr&;
     void setSockAddr(const SockAddr&);
 
 private:

@@ -42,7 +42,7 @@ bool Socket::isSelfConnect(Socket socket) {
     return false;
 }
 
-Socket::Socket() : fd_(socket(AF_INET, SOCK_STREAM | SOCK_NONBLOCK | SOCK_CLOEXEC, 0)) {
+Socket::Socket(): fd_(socket(AF_INET, SOCK_STREAM | SOCK_NONBLOCK | SOCK_CLOEXEC, 0)) {
     if(fd_ == -1) {
         throw exception::SocketException("Create socket failed", errno);
     }

@@ -9,7 +9,7 @@ using esynet::logger::SyncLogger;
 using esynet::utils::FileWriter;
 using esynet::utils::Timestamp;
 
-SyncLogger::SyncLogger(std::filesystem::path path) :
+SyncLogger::SyncLogger(std::filesystem::path path):
         file_(new FileWriter(std::filesystem::current_path()/path)) {
     file_->open();
 }

@@ -27,6 +27,7 @@ constexpr int operator""_GB(unsigned long long num) {
 
 namespace esynet::utils {
 
+// TODO: string_view
 template<int SIZE>
 class LogBuffer {
 public:

@@ -43,23 +43,24 @@ public:
     TcpConnection(Looper&, utils::StringPiece, Socket, const NetAddress& local, const NetAddress& peer);
     ~TcpConnection();
 
-    const std::string&     name()         const;
-    const NetAddress&      localAddress() const;
-    const NetAddress&      peerAddress()  const;
-    bool                   connected()    const;
-    bool                   disconnected() const;
-    std::optional<TcpInfo> tcpInfo()      const;
-    std::string            tcpInfoStr()   const;
-    Looper&                looper()       const;
+    auto name()         const -> const std::string&;
+    auto localAddress() const -> const NetAddress&;
+    auto peerAddress()  const -> const NetAddress&;
+    auto tcpInfo()      const -> std::optional<TcpInfo>;
+    auto tcpInfoStr()   const -> std::string;
+    auto looper()       const -> Looper&;
+    bool connected()    const;
+    bool disconnected() const;
 
     void send(const void*, size_t);
     void send(const utils::StringPiece);
     void shutdown();
     void forceClose();
+    void forceCloseWithoutCallback();
     void setTcpNoDelay(bool);
 
     void setContext(const std::any&);
-    const std::any& getContext() const;
+    auto getContext() const -> const std::any&;
 
     void setConnectionCallback(const ConnectionCallback&);
     void setMessageCallback(const MessageCallback&);
@@ -83,23 +84,24 @@ private:
     Looper& looper_;
     const std::string name_;
 
-    Socket socket_;
-    std::atomic<State> state_;
-    const NetAddress localAddr_;
-    const NetAddress peerAddr_;
     Event event_;
+    Socket socket_;
+    const NetAddress peerAddr_;
+    const NetAddress localAddr_;
+    std::atomic<State> state_{kConnecting};
 
-    ConnectionCallback connectionCb_;
-    MessageCallback messageCb_;
-    WriteCompleteCallback writeCompleteCb_;
-    HighWaterMarkCallback highWaterMarkCb_;
     CloseCallback closeCb_;
     ErrorCallback errorCb_;
-    size_t highWaterMark_;
+    MessageCallback messageCb_;
+    ConnectionCallback connectionCb_;
+    WriteCompleteCallback writeCompleteCb_;
+    HighWaterMarkCallback highWaterMarkCb_;
 
+    size_t highWaterMark_{64_MB};
+
+    std::any context_;
     utils::Buffer readBuffer_;
     utils::Buffer sendBuffer_;
-    std::any context_;
 };
 
 } /* namespace esynet */

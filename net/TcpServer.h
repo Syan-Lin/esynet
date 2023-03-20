@@ -36,10 +36,10 @@ public:
     ~TcpServer();
 
     /* 线程安全 */
-    const std::string& ip()   const;
-    const std::string& name() const;
-    const int          port() const;
-    Looper&           looper();
+    auto ip()   const -> const std::string&;
+    auto name() const -> const std::string&;
+    auto port() const -> const int;
+    auto looper() -> Looper&;
 
     void setConnectionCallback(const ConnectionCallback&);
     void setMessageCallback(const MessageCallback&);
@@ -49,7 +49,7 @@ public:
     void setThreadInitCallback(const ThreadInitCallback&);
     void setThreadNumInPool(size_t numThreads = 0);
 
-    ReactorThreadPoll& threadPoll();
+    auto threadPoll() -> ReactorThreadPoll&;
     void setThreadPollStrategy(Strategy strategy);
 
     void start();
@@ -63,19 +63,19 @@ private:
     const int port_;
     const std::string ip_;
     const std::string name_;
-    std::atomic<bool> started_;
+    std::atomic<bool> started_{false};
 
     Acceptor acceptor_;
     ReactorThreadPoll threadPoll_;
-    Strategy strategy_;
+    Strategy strategy_{kRoundRobin};
 
-    ConnectionCallback connectionCb_;
-    WriteCompleteCallback writeCompleteCb_;
-    MessageCallback messageCb_;
     CloseCallback closeCb_;
     ErrorCallback errorCb_;
+    MessageCallback messageCb_;
+    ConnectionCallback connectionCb_;
+    WriteCompleteCallback writeCompleteCb_;
 
-    int connectionCount_;
+    int connectionCount_{1};
     ConnectionMap connections_;
 };
 

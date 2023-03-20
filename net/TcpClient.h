@@ -35,9 +35,9 @@ public:
     void stopConnecting();
 
     /* 线程安全 */
-    TcpConnectionPtr    connection() const;
-    Looper&            looper();
-    const std::string&  name() const;
+    auto connection() const -> TcpConnectionPtr;
+    auto looper()           -> Looper&;
+    auto name()       const -> const std::string&;
 
     void setConnectionCallback(const ConnectionCallback&);
     void setMessageCallback(const MessageCallback&);
@@ -56,10 +56,10 @@ private:
     ConnectorPtr connector_;
     TcpConnectionPtr connection_;
 
-    ConnectionCallback connectionCb_;
-    MessageCallback messageCb_;
     CloseCallback closeCb_;
     ErrorCallback errorCb_;
+    MessageCallback messageCb_;
+    ConnectionCallback connectionCb_;
     WriteCompleteCallback writeCompleteCb_;
 
     const std::string name_;

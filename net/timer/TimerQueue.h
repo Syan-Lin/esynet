@@ -14,32 +14,32 @@ namespace esynet::timer {
  * 函数一定会准时执行，有可能会因为繁忙而延后 */
 class TimerQueue {
 public:
-    using TimerPtr = std::unique_ptr<Timer>;
-    using TimerList = std::vector<Timer*>;
-    using TimerMap = std::map<Timestamp, TimerPtr>;   /* 有序表，按到期时间从小到大排序 */
+    using TimerPtr         = std::unique_ptr<Timer>;
+    using TimerList        = std::vector<Timer*>;
+    using TimerMap         = std::map<Timestamp, TimerPtr>; /* 有序表，按到期时间从小到大排序 */
     using TimerPositionMap = std::map<Timer::ID, Timestamp>;
 
 public:
     TimerQueue(Looper&);
     ~TimerQueue();
 
-    Timer::ID addTimer(Timer::Callback, Timestamp expiration, double interval);
+    auto addTimer(Timer::Callback, Timestamp expiration, double interval) -> Timer::ID;
     void cancel(Timer::ID);
 
     /* 由 Looper 调用 */
     void handle();
 
 private:
-    TimerList getExpired(Timestamp now) const;    /* 获取所有超时事件 */
+    auto getExpired(Timestamp now) const -> TimerList; /* 获取所有超时事件 */
     int createTimerFd();
     void updateTimerFd();
 
 private:
-    TimerMap timerMap_;
-    TimerPositionMap timerPositionMap_; /* 记录Timer在timerMap_中的位置用于取消 */
     int timerFd_;
     Looper& looper_;
     Event timerEvent_;
+    TimerMap timerMap_;
+    TimerPositionMap timerPositionMap_; /* 记录Timer在timerMap_中的位置用于取消 */
 };
 
 } /* namespace esynet::timer */

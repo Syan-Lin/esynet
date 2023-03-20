@@ -22,7 +22,7 @@ public:
     void run();
     void restart();
 
-    Timestamp expiration() const;
+    auto expiration() const -> Timestamp;
     bool repeat() const;
     ID id() const;
 
@@ -33,9 +33,9 @@ private:
 private:
     const ID id_;
     const bool repeat_;
-    const Callback callback_;
-    const double interval_;     /* 单位：毫秒 */
     Timestamp expiration_;
+    const double interval_; /* 单位：毫秒 */
+    const Callback callback_;
 
 };
 

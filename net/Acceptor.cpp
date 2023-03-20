@@ -11,7 +11,6 @@ using esynet::Acceptor;
 Acceptor::Acceptor(Looper& looper, const NetAddress& localAddr):
                     looper_(looper),
                     acceptEvent_(looper, acceptSocket_.fd()),
-                    listen_(false),
                     port_(localAddr.port()) {
     acceptSocket_.setReuseAddr(true);
     acceptSocket_.setReusePort(true);
@@ -39,6 +38,12 @@ void Acceptor::listen() {
     listen_ = true;
     acceptSocket_.listen();
     acceptEvent_.enableRead();
+}
+void Acceptor::shutdown() {
+    looper_.assert();
+
+    listen_ = false;
+    acceptEvent_.cancel();
 }
 
 void Acceptor::onAccept() {
