@@ -17,3 +17,7 @@ inline std::string errnoStr(int err) {
     std::unique_lock<std::mutex> lock(gMutex);
     return strerror(err);
 }
+
+inline std::string httpErrStr(int err) {
+    return "Unknown";
+}

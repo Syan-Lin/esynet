@@ -18,7 +18,7 @@ public:
     using Callback = std::function<void()>;
 
 public:
-    Event(Looper&, int);
+    Event(Looper&, int fd);
 
     void handle();
     void setCloseCallback(Callback);

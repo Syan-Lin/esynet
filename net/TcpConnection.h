@@ -40,7 +40,10 @@ public:
     static void defaultHighWaterMarkCallback(TcpConnection&, size_t);
 
 public:
-    TcpConnection(Looper&, utils::StringPiece, Socket, const NetAddress& local, const NetAddress& peer);
+    TcpConnection(Looper&,
+                  utils::StringPiece name, Socket,
+                  const NetAddress& local,
+                  const NetAddress& peer);
     ~TcpConnection();
 
     auto name()         const -> const std::string&;
@@ -52,8 +55,8 @@ public:
     bool connected()    const;
     bool disconnected() const;
 
-    void send(const void*, size_t);
-    void send(const utils::StringPiece);
+    void send(const void* data, size_t len);
+    void send(const utils::StringPiece data);
     void shutdown();
     void forceClose();
     void forceCloseWithoutCallback();

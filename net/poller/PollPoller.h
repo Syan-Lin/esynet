@@ -18,7 +18,7 @@ public:
     void removeEvent(Event&) override;
 
 private:
-    void fillActiveEvents(int numEvents, EventList&) const;
+    void fillActiveEvents(int eventsNum, EventList&) const;
 
 private:
     using PollFd = struct pollfd;

@@ -21,7 +21,7 @@ public:
 
 private:
     void epollUpdate(int operation, Event&);
-    void fillActiveEvents(int numEvents, EventList&) const;
+    void fillActiveEvents(int eventsNum, EventList&) const;
 
 private:
     using EpollEvent = struct epoll_event;

@@ -30,10 +30,10 @@ public:
     enum Strategy { kRoundRobin, kLightest };
 
 public:
-    TcpServer(NetAddress addr = 8080,
+    TcpServer(NetAddress         addr = 8080,
               utils::StringPiece name = "Server",
-              bool useEpoll = true);
-    ~TcpServer();
+              bool               useEpoll = true);
+    ~TcpServer() = default;
 
     /* 线程安全 */
     auto ip()   const -> const std::string&;
@@ -57,7 +57,7 @@ public:
 
 private:
     void onConnection(Socket, const NetAddress&);
-    void removeConnection(TcpConnection& conn);
+    void removeConnection(TcpConnection&);
 
     Looper looper_;
     const int port_;

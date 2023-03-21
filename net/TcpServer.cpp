@@ -26,10 +26,6 @@ TcpServer::TcpServer(NetAddress addr, utils::StringPiece name, bool useEpoll):
                                 std::placeholders::_1, std::placeholders::_2));
 }
 
-TcpServer::~TcpServer() {
-    shutdown();
-}
-
 void TcpServer::start() {
     looper_.assert();
 

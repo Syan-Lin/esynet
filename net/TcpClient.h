@@ -26,7 +26,9 @@ private:
     using ErrorCallback         = TcpConnection::ErrorCallback;
 
 public:
-    TcpClient(NetAddress, utils::StringPiece name = "Client", bool useEpoll = true);
+    TcpClient(NetAddress serverAddr,
+              utils::StringPiece name = "Client",
+              bool useEpoll = true);
     ~TcpClient();
 
     void connect();

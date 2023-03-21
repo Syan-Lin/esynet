@@ -11,7 +11,7 @@ int main() {
     string msg;
     thread client([&msg] {
         sleep(1);
-        TcpClient client(1234, "HelloClient");
+        TcpClient client({"0.0.0.0", 1234}, "HelloClient");
         client.setMessageCallback([&msg](TcpConnection& conn, utils::Buffer& buffer, utils::Timestamp time) {
             msg = buffer.retrieveAllAsString();
             LOG_INFO("Receive data from {}: {}", conn.peerAddress().ip(), msg);
@@ -30,8 +30,8 @@ int main() {
         conn.send("Hello, welcome to HelloServer!");
         conn.forceClose();
     });
-    server.setWriteCompleteCallback([&server](TcpConnection& conn){
-        LOG_INFO("Send data to {} complete", conn.peerAddress().ip());
+    server.setCloseCallback([&server](TcpConnection& conn){
+        LOG_INFO("Connection close {}", conn.peerAddress().ip());
         server.shutdown();
     });
     server.start();

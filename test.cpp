@@ -9,6 +9,7 @@
 #include "net/thread/ReactorThreadPoll.h"
 #include "net/poller/EpollPoller.h"
 #include "net/base/Socket.h"
+#include "http/Header.h"
 
 #include <sys/timerfd.h>
 #include <dbg.h>
@@ -20,17 +21,9 @@ using namespace std;
 using namespace esynet;
 using namespace esynet::timer;
 using namespace esynet::utils;
+using namespace esynet::http;
 
 int main() {
-    Looper loop;
-    ReactorThreadPoll poll(loop);
-
-    Socket sock;
-
-    poll.setThreadNum(4);
-    poll.start();
-    sleep(1);
-    poll.stop();
 
     return 0;
 }
